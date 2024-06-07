@@ -1,0 +1,47 @@
+db.sqlite3
+desktop.ini
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+Rubbish/
+
+# Caches
+*.sqlite3
+*.pyc
+
+migration/*
+!__init__.py
+
+
+# Logs and databases
+*.log
+*.pot
+*.sql
+db.sqlite3
+
+# Static files
+staticfiles/
+*.swp
+
+# Media files
+media/
+
+# Environment variables
+.env
+
+# Secret key
+*.secret_key
+
+# IDEs
+.vscode/
+.idea/
+
+# Compiled Python files
+*.pyc
+
+# Dependency directories
+venv/
+env/
+pip-wheel-metadata/
