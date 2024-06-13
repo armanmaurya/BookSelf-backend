@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,13 +28,23 @@ SECRET_KEY = 'django-insecure-s@sg)7rq8%jlb7rh#gq3$yv#pncc6wpsjqj3u0-5fkzf7e1&h8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 AUTH_USER_MODEL = "users.CustomUser"
+
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 365 * 10
+SESSION_COOKIE_AGE = 1209600  # 2 weeks, for example
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+CSRF_ALLOW_ORIGIN = "http://localhost:3000"
+CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:3000']
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
+# SESSION_COOKIE_DOMAIN = ".bookself.site"
+
+
+# Google OAuth2 settings
+BASE_FRONTEND_URL = "http://localhost:3000"
+GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
+GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 
 # CORS_ALLOWED_ORIGINS = [
 #     "https://example.com",
@@ -75,7 +87,10 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
-    )
+    ),
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
 }
 
 ROOT_URLCONF = 'backend.urls'
@@ -145,8 +160,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 # EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 # EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-EMAIL_HOST_USER = "armanmarya6@gmail.com"
-EMAIL_HOST_PASSWORD = "hazc ytyw bdry prpu"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False

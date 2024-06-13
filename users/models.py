@@ -11,6 +11,15 @@ from .managers import CustomUserManager
 class CustomUser(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
+    
+    REGISTRATION_CHOICES = [
+        ("email", "Email"),
+        ("google", "Google"),
+    ]
+    
+    registration_method = models.CharField(
+        max_length=10, choices=REGISTRATION_CHOICES, default="email"
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
