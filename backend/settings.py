@@ -38,6 +38,8 @@ CSRF_ALLOW_ORIGIN = "http://localhost:3000"
 CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:3000']
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
+
+# CSRF_COOKIE_DOMAIN = ".bookself.site"
 # SESSION_COOKIE_DOMAIN = ".bookself.site"
 
 
