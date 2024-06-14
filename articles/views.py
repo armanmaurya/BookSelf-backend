@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from articles.models import Article
 from .serializers import ArticleUploadSerializer, ArticleGetSerializer
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
 User = get_user_model()
 
@@ -59,7 +59,7 @@ class ArticleListView(APIView):
             article['author'] = author.first_name + ' ' + author.last_name
         return Response(data)
     
-@csrf_exempt
+# @csrf_exempt
 @api_view(['POST'])
 def uploadArticle(request):
     if request.method == 'POST':

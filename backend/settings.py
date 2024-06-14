@@ -34,17 +34,17 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_AGE = 1209600  # 2 weeks, for example
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
-CSRF_ALLOW_ORIGIN = "http://localhost:3000"
-CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:3000']
+CSRF_ALLOW_ORIGIN = os.getenv("CSRF_ALLOW_ORIGIN")
+CSRF_TRUSTED_ORIGINS = ['https://bookself.site','http://localhost:3000', 'http://127.0.0.1:3000']
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
 
-# CSRF_COOKIE_DOMAIN = ".bookself.site"
-# SESSION_COOKIE_DOMAIN = ".bookself.site"
+CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN")
+SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN")
 
 
 # Google OAuth2 settings
-BASE_FRONTEND_URL = "http://localhost:3000"
+BASE_FRONTEND_URL = os.getenv("BASE_FRONTEND_URL")
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
 GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 
