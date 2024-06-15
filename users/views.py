@@ -39,6 +39,7 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
 
         code = validated_data.get('code')
         error = validated_data.get('error')
+        redirect_path = validated_data.get('redirect_path')
 
         login_url = f'{settings.BASE_FRONTEND_URL}/login'
     
@@ -46,7 +47,7 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
             params = urlencode({'error': error})
             return redirect(f'{login_url}?{params}')
 
-        redirect_uri = f'{settings.BASE_FRONTEND_URL}/account/signin'
+        redirect_uri = f'{settings.BASE_FRONTEND_URL}{redirect_path}'
         access_token = google_get_access_token(code=code, 
                                                redirect_uri=redirect_uri)
 

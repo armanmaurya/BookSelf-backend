@@ -11,9 +11,6 @@ Rubbish/
 *.sqlite3
 *.pyc
 
-migration/*
-!__init__.py
-
 
 # Logs and databases
 *.log

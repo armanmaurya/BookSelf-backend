@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from rest_framework import serializers
 from .models import CustomUser as User, EmailVerification
 from rest_framework.validators import UniqueValidator
@@ -15,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 class GoogleAuthInputSerializer(serializers.Serializer):
     code = serializers.CharField(required=False)
     error = serializers.CharField(required=False)
+    redirect_path = serializers.CharField(required=False)
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

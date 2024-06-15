@@ -28,7 +28,7 @@ def google_get_access_token(*, code: str, redirect_uri: str) -> str:
         'client_id': settings.GOOGLE_OAUTH2_CLIENT_ID,
         'client_secret': settings.GOOGLE_OAUTH2_CLIENT_SECRET,
         'redirect_uri': redirect_uri,
-        'grant_type': 'authorization_code'
+    'grant_type': 'authorization_code'
     }
     
 
@@ -38,7 +38,7 @@ def google_get_access_token(*, code: str, redirect_uri: str) -> str:
     # print(response.json())
 
     if not response.ok:
-        raise ValidationError('Failed to obtain access token from Google.')
+        raise ValidationError(['Failed to obtain access token from Google.', response.json()])
 
     access_token = response.json()['access_token']
 
