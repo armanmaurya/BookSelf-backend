@@ -31,16 +31,18 @@ class Search(APIView):
             # Update scores for matched articles
             for article in articles:
                 article_scores[article.id] += 1
+                
 
         # Sort article IDs based on their scores (descending order)
         sorted_article_ids = sorted(article_scores, key=lambda x: article_scores[x], reverse=True)
-
         # Retrieve articles based on sorted IDs
-        sorted_articles = Article.objects.filter(pk__in=sorted_article_ids)
-
+        unsorted_articles = Article.objects.filter(pk__in=sorted_article_ids)
+        sorted_articles = sorted(unsorted_articles, key=lambda x: sorted_article_ids.index(x.id))
         # Serialize the sorted articles
         serializer = ArticleSerializer(sorted_articles, many=True)
         data = serializer.data
+        print(data)
+        
 
         # Replace author IDs with author names in the serialized data
         for article in data:

@@ -11,6 +11,7 @@ Rubbish/
 # Caches
 *.sqlite3
 *.pyc
+static/
 
 
 # Logs and databases
