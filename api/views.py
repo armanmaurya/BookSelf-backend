@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.mail import send_mail
 
-from articles.serializers import ArticleGetSerializer
+from articles.serializers import ArticleSerializer
 from articles.models import Article
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model  # If used custom user model
@@ -39,7 +39,7 @@ class Search(APIView):
         sorted_articles = Article.objects.filter(pk__in=sorted_article_ids)
 
         # Serialize the sorted articles
-        serializer = ArticleGetSerializer(sorted_articles, many=True)
+        serializer = ArticleSerializer(sorted_articles, many=True)
         data = serializer.data
 
         # Replace author IDs with author names in the serialized data

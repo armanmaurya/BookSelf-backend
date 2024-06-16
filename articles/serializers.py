@@ -4,10 +4,11 @@ from .models import Article
 class ArticleUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
-        fields = ['title', 'content']
+        fields = ['author']
 
-class ArticleGetSerializer(serializers.ModelSerializer):
+class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = ['id', 'title', 'content',
                   'author', 'created_at', "thumbnail"]
+        

@@ -5,34 +5,47 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 
 from articles.models import Article
-from .serializers import ArticleUploadSerializer, ArticleGetSerializer
+from .serializers import ArticleUploadSerializer, ArticleSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.authentication import SessionAuthentication
+from articles.models import Article
 
 
 User = get_user_model()
 
 # Create your views here.
+
+
 class ArticleView(APIView):
     authentication_classes = [SessionAuthentication]
 
-
     def post(self, request):
-        serializer = ArticleUploadSerializer(data=request.data)
-        if serializer.is_valid():
+        article = Article.objects.create(author=request.user)
+        serializer = ArticleSerializer(article)
+        # # if serializer.is_valid():
 
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # serializer.save(author=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        id = request.data.get('id')
+        article = Article.objects.get(id=id)
+
+        article.title = request.data.get('title')
+        article.content = request.data.get('content')
+        article.save()
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get(self, request):
         id = request.query_params.get('id')
         if id:
             print(request.user)
             article = Article.objects.get(id=id)
-            serializer = ArticleGetSerializer(article)
+            serializer = ArticleSerializer(article)
             data = serializer.data
             author_id = data['author']
             author = User.objects.get(id=author_id)
@@ -43,7 +56,7 @@ class ArticleView(APIView):
             })
         else:
             articles = Article.objects.all()
-            serializer = ArticleGetSerializer(articles, many=True)
+            serializer = ArticleSerializer(articles, many=True)
             data = serializer.data
             for article in data:
                 author_id = article['author']
@@ -58,8 +71,10 @@ class ArticleView(APIView):
         #     # return [SessionAuthentication()]
         return []
 
+
 class CheckArticleOwner(APIView):
     authentication_classes = [SessionAuthentication]
+
     def get(self, request):
         article_id = request.query_params.get('id')
         article = Article.objects.get(id=article_id)
@@ -68,17 +83,19 @@ class CheckArticleOwner(APIView):
             return Response({"status": True})
         return Response({"status": False})
 
+
 class ArticleListView(APIView):
     def get(self, request):
         articles = Article.objects.all()
-        serializer = ArticleGetSerializer(articles, many=True)
+        serializer = ArticleSerializer(articles, many=True)
         data = serializer.data
         for article in data:
             author_id = article['author']
             author = User.objects.get(id=author_id)
             article['author'] = author.first_name + ' ' + author.last_name
         return Response(data)
-    
+
+
 class CheckArticleBelongsToUser(APIView):
     def get(self, request):
         article_id = request.query_params.get('id')
@@ -86,6 +103,7 @@ class CheckArticleBelongsToUser(APIView):
         if article.author == request.user:
             return Response({'message': 'Article belongs to user'})
         return Response({'message': 'Article does not belong to user'})
+
 
 @api_view(['POST'])
 def uploadArticle(request):
