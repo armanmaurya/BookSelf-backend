@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 Rubbish/
+*.exe
 
 # Caches
 *.sqlite3
