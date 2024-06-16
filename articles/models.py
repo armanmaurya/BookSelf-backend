@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 # Create your models here.
 
@@ -11,7 +12,7 @@ class Article(models.Model):
         (DRAFT, 'Draft'),
         (PUBLISHED, 'Published'),
     ]
-
+    id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True)
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
