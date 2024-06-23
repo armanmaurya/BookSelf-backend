@@ -24,11 +24,13 @@ class ArticleView(APIView):
     def post(self, request):
         article = Article.objects.create(author=request.user)
         serializer = ArticleSerializer(article)
-        # # if serializer.is_valid():
-
-        # serializer.save(author=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request):
+        id = request.query_params.get('id')
+        article = Article.objects.get(id=id)
+        article.delete()
+        return Response(status=status.HTTP_200_OK)
 
     def put(self, request):
         id = request.data.get('id')
@@ -67,8 +69,10 @@ class ArticleView(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAuthenticated()]
-        # if self.request.method == 'GET':
-        #     # return [SessionAuthentication()]
+        if self.request.method == 'PUT':
+            return [IsAuthenticated()]
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated()]
         return []
 
 
