@@ -25,4 +25,6 @@ class Article(models.Model):
         max_length=2, choices=STATUS_CHOICES, default=DRAFT)
 
     def __str__(self):
-        return self.title
+        if self.title:
+            return self.title
+        return "Untitled"
