@@ -1,4 +1,3 @@
-from turtle import update
 from django.forms import ValidationError
 from rest_framework import status
 from rest_framework.views import APIView
