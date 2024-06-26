@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'articles',
     'rest_framework_simplejwt',
+    'taggit',
     
 ]
 
