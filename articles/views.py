@@ -58,6 +58,7 @@ class ArticleView(APIView):
         article = self.get_article(id)
         tags = request.data.get("tags")
         if tags:
+            article.tags.clear()
             article.tags.add(*tags)
             return Response({"message": "Tags added"}, status=status.HTTP_200_OK)
         updated_at = datetime.datetime.now()
