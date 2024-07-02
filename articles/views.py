@@ -34,28 +34,31 @@ class ArticleView(APIView):
 
     def post(self, request):
         article = Article.objects.create(author=request.user)
-        serializer = ArticleSerializer(article)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(article.pk, "pk")
+        
+        # article2 = Article.objects.get(pk=article.pk)
+        # serializer = ArticleSerializer(article2)
+        return Response(status=status.HTTP_201_CREATED)
 
     def delete(self, request):
-        id = request.query_params.get("id")
-        if id is None:
+        slug = request.query_params.get("slug")
+        if slug is None:
             return Response(
                 {"message": "Article ID not provided"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        article = self.get_article(id)
+        article = self.get_article(slug)
         article.delete()
         return Response(status=status.HTTP_200_OK)
 
     def patch(self, request):
-        id = request.query_params.get("id")
-        if id is None:
+        slug = request.query_params.get("slug")
+        if slug is None:
             return Response(
                 {"message": "Article ID not provided"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        article = self.get_article(id)
+        article = self.get_article(slug)
         tags = request.data.get("tags")
         if tags:
             article.tags.clear()
