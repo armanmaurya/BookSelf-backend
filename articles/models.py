@@ -1,11 +1,27 @@
+import random
+import string
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 import uuid
 from taggit.managers import TaggableManager
 from taggit.models import GenericUUIDTaggedItemBase, TaggedItemBase
+from django.utils.text import slugify
 
 # Create your models here.
+
+
+def generate_unique_slug():
+
+    base_slug = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+
+    slug = base_slug
+    while Article.objects.filter(slug=slug).exists():
+        random_string = "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=6)
+        )
+        slug = f"{base_slug}-{random_string}"
+    return slug
 
 
 class Article(models.Model):
@@ -23,11 +39,29 @@ class Article(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     thumbnail = models.ImageField(upload_to="thumbnails/", null=True, blank=True)
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=DRAFT)
+    slug = models.SlugField(max_length=255, unique=True, default=generate_unique_slug)
 
     def __str__(self):
         if self.title:
             return self.title
         return "Untitled"
 
+    def save(self, *args, **kwargs):
+        self.slug = self.generate_unique_slug()
+        super().save(*args, **kwargs)
 
+    def generate_unique_slug(self):
+        if self.title:
+            base_slug = slugify(self.title)
+        else:
+            base_slug = "".join(
+                random.choices(string.ascii_lowercase + string.digits, k=8)
+            )
 
+        slug = base_slug
+        while Article.objects.filter(slug=slug).exists():
+            random_string = "".join(
+                random.choices(string.ascii_lowercase + string.digits, k=6)
+            )
+            slug = f"{base_slug}-{random_string}"
+        return slug
