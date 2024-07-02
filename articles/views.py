@@ -25,9 +25,9 @@ User = CustomUser
 class ArticleView(APIView):
     authentication_classes = [SessionAuthentication]
 
-    def get_article(self, id):
+    def get_article(self, slug):
         try:
-            article = Article.objects.get(id=id)
+            article = Article.objects.get(slug=slug)
             return article
         except Article.DoesNotExist:
             raise ValidationError({"message": "Article not found"})
@@ -73,10 +73,10 @@ class ArticleView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
-        id = request.query_params.get("id")
-        if id:
+        slug = request.query_params.get("slug")
+        if slug:
             print(request.user)
-            article = self.get_article(id)
+            article = self.get_article(slug)
             serializer = ArticleSerializer(article)
             data = serializer.data
             author_id = data["author"]
