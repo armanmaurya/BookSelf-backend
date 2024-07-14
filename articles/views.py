@@ -34,11 +34,11 @@ class ArticleView(APIView):
 
     def post(self, request):
         article = Article.objects.create(author=request.user)
-        print(article.pk, "pk")
-        
+        # print(article.pk, "pk")
+
         # article2 = Article.objects.get(pk=article.pk)
-        # serializer = ArticleSerializer(article2)
-        return Response(status=status.HTTP_201_CREATED)
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
         slug = request.query_params.get("slug")
