@@ -77,6 +77,7 @@ class ArticleView(APIView):
 
     def get(self, request):
         slug = request.query_params.get("slug")
+        userId = request.query_params.get("userId")
         if slug:
             print(request.user)
             article = self.get_article(slug)
@@ -86,6 +87,15 @@ class ArticleView(APIView):
             author = User.objects.get(id=author_id)
             data["author"] = author.email
             return Response({"data": data, "is_owner": author == request.user})
+        elif userId:
+            articles = Article.objects.filter(author=userId)
+            serializer = ArticleSerializer(articles, many=True)
+            data = serializer.data
+            for article in data:
+                author_id = article["author"]
+                author = User.objects.get(id=author_id)
+                article["author"] = author.first_name + " " + author.last_name
+            return Response(data)
         else:
             articles = Article.objects.all()
             serializer = ArticleSerializer(articles, many=True)
@@ -117,6 +127,18 @@ class CheckArticleOwner(APIView):
             return Response({"status": True})
         return Response({"status": False})
 
+class MyArticlesView(APIView):
+    authentication_classes = [SessionAuthentication]
+
+    def get(self, request):
+        articles = Article.objects.filter(author=request.user)
+        serializer = ArticleSerializer(articles, many=True)
+        data = serializer.data
+        for article in data:
+            author_id = article["author"]
+            author = User.objects.get(id=author_id)
+            article["author"] = author.first_name + " " + author.last_name
+        return Response(data)
 
 class ArticleListView(APIView):
     def get(self, request):
