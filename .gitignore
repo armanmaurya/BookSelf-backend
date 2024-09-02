@@ -34,7 +34,6 @@ media/
 *.secret_key
 
 # IDEs
-.vscode/
 .idea/
 
 # Compiled Python files
