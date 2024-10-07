@@ -14,6 +14,7 @@ from django.contrib.auth import login, logout  # If used custom user model
 from django.core.mail import send_mail
 from django.utils import timezone
 import random
+from rest_framework.authentication import SessionAuthentication
 
 
 
@@ -28,6 +29,15 @@ def generate_tokens_for_user(user):
     refresh_token = token_data
     return access_token, refresh_token
 
+class PersonalInfoView(APIView):
+    authentication_classes = [SessionAuthentication]
+    def get(self, request):
+        user = request.user
+        return Response({
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })
 
 class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
 
