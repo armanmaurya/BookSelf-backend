@@ -26,6 +26,7 @@ class Article(models.Model):
     thumbnail = models.ImageField(upload_to="thumbnails/", null=True, blank=True)
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=DRAFT)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
         if self.title:
