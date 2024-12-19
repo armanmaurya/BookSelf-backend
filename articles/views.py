@@ -21,6 +21,14 @@ User = CustomUser
 
 # Create your views here.
 
+class GetChildrenArticle(APIView):
+    def get(self, request):
+        id = request.query_params.get("id")
+        if id:
+            articles = Article.objects.filter(parent=id)
+            print(articles)
+
+        return Response(status=status.HTTP_200_OK)
 
 class ArticleView(APIView):
     authentication_classes = [SessionAuthentication]
