@@ -9,12 +9,14 @@ from rest_framework import status
 from .mixins import PublicApiMixin, ApiErrorsMixin
 from .utils import google_get_access_token, google_get_user_info
 from users.models import CustomUser as User, EmailVerification
-from users.serializers import GoogleAuthInputSerializer, RegisterSerializer, LoginSerializer, EmailVerificationSerializer, VerifyCodeSerializer
+from users.serializers import GoogleAuthInputSerializer, RegisterAccountTempSerializer, RegisterSerializer, LoginSerializer, EmailVerificationSerializer, VerifyCodeSerializer
 from django.contrib.auth import login, logout  # If used custom user model
 from django.core.mail import send_mail
 from django.utils import timezone
 import random
 from rest_framework.authentication import SessionAuthentication
+
+from .models import RegisterAccountTemp
 
 
 
@@ -73,15 +75,15 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
             first_name = user_data.get('given_name', '')
             last_name = user_data.get('family_name', '')
 
-            user = User.objects.create(
+
+            tempUser = RegisterAccountTemp.objects.get_or_create(
                 email=user_data['email'],
                 first_name=first_name,
                 last_name=last_name,
-                registration_method='google',
             )
          
-            request.session['user_id'] = user.id
-            login(request, user)
+            request.session['tempUser_id'] = tempUser.id
+            # login(request, user)
             request.session.save()
             return Response(status=status.HTTP_201_CREATED)
         

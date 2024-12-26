@@ -1,6 +1,6 @@
 from django.shortcuts import redirect
 from rest_framework import serializers
-from .models import CustomUser as User, EmailVerification
+from .models import CustomUser as User, EmailVerification, RegisterAccountTemp
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
@@ -17,6 +17,11 @@ class GoogleAuthInputSerializer(serializers.Serializer):
     code = serializers.CharField(required=False)
     error = serializers.CharField(required=False)
     redirect_path = serializers.CharField(required=False)
+
+class RegisterAccountTempSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegisterAccountTemp
+        fields = ['email', 'first_name', 'last_name']
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

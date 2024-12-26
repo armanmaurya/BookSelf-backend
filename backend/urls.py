@@ -23,5 +23,6 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path("account/", include("users.urls")),
     path("article/", include("articles.urls")),
+    path("notebook/", include("notebook.urls")),
     path("", home)
 ]

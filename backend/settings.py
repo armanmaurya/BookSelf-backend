@@ -73,6 +73,8 @@ INSTALLED_APPS = [
     'articles',
     'rest_framework_simplejwt',
     'taggit',
+    'notebook',
+    'page'
     
 ]
 

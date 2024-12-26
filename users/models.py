@@ -9,7 +9,7 @@ from .managers import CustomUserManager
 
 
 class CustomUser(AbstractUser):
-    username = None
+    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(_("email address"), unique=True)
     
     REGISTRATION_CHOICES = [
@@ -21,15 +21,21 @@ class CustomUser(AbstractUser):
         max_length=10, choices=REGISTRATION_CHOICES, default="email"
     )
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name"]
+    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
     objects = CustomUserManager()
 
     def __str__(self):
         return self.email
     
-    
+
+class RegisterAccountTemp(models.Model):
+    email = models.EmailField(_(""), max_length=254)
+    first_name = models.CharField(_(""), max_length=150)
+    last_name = models.CharField(_(""), max_length=150)
+
+
 class EmailVerification(models.Model):
     email = models.EmailField(unique=True)
     code = models.CharField(max_length=4)
