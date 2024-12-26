@@ -36,3 +36,5 @@ python manage.py runserver 0.0.0.0:8000
 Email : `admin2@gmail.com`
 Password: `1922`
 ```
+## API Documentation
+follow this [link](https://documenter.getpostman.com/view/38819876/2sAYJ6BK58)

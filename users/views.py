@@ -83,7 +83,6 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
             )
          
             request.session['tempUser_id'] = tempUser.id
-            # login(request, user)
             request.session.save()
             return Response(status=status.HTTP_201_CREATED)
         
