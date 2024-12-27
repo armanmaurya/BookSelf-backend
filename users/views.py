@@ -54,10 +54,12 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
         redirect_path = validated_data.get('redirect_path')
 
         login_url = f'{settings.BASE_FRONTEND_URL}/login'
-    
+
         if error or not code:
             params = urlencode({'error': error})
-            return redirect(f'{login_url}?{params}')
+            return Response({'message': 'Login failed'}, status=status.HTTP_400_BAD_REQUEST)
+            # print(f'{login_url}?{params}')
+            # return redirect(f'{login_url}?{params}')
 
         redirect_uri = f'{settings.BASE_FRONTEND_URL}{redirect_path}'
         access_token = google_get_access_token(code=code, 
@@ -85,6 +87,12 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
             request.session['tempUser_id'] = tempUser.id
             request.session.save()
             return Response(status=status.HTTP_201_CREATED)
+        
+class UserNameView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response({'username': user.username})
+        
         
         
 class RegisterView(APIView):

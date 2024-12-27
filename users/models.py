@@ -32,8 +32,8 @@ class CustomUser(AbstractUser):
 
 class RegisterAccountTemp(models.Model):
     email = models.EmailField(_(""), max_length=254)
-    first_name = models.CharField(_(""), max_length=150)
-    last_name = models.CharField(_(""), max_length=150)
+    first_name = models.CharField(_(""), max_length=150, null=True, blank=True)
+    last_name = models.CharField(_(""), max_length=150, null=True, blank=True)
 
 
 class EmailVerification(models.Model):
