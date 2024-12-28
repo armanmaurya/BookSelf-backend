@@ -19,6 +19,7 @@ from rest_framework.authentication import SessionAuthentication
 from .models import RegisterAccountTemp
 
 
+TEMP_ID = 'tempUser_id'
 
 
 def generate_tokens_for_user(user):
@@ -40,6 +41,13 @@ class PersonalInfoView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name,
         })
+    
+class IsUserNameAvailable(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username is not available'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Username is available'}, status=status.HTTP_200_OK)
 
 class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
 
@@ -78,21 +86,57 @@ class GoogleAuth(PublicApiMixin, ApiErrorsMixin, APIView):
             last_name = user_data.get('family_name', '')
 
 
-            tempUser = RegisterAccountTemp.objects.get_or_create(
-                email=user_data['email'],
+            # tempUser = RegisterAccountTemp.objects.get_or_create(
+            #     email=user_data['email'],
+            #     first_name=first_name,
+            #     last_name=last_name,
+            # )
+         
+            # request.session[TEMP_ID] = tempUser[0].id
+            request.session['email'] = user_data.get('email')
+            request.session['first_name'] = first_name
+            request.session['last_name'] = last_name
+            request.session.save()
+            response = Response(status=status.HTTP_201_CREATED)
+            # response.set_cookie(TEMP_ID, tempUser[0].id)
+            return response
+        
+class TempUserView(APIView):
+    def get(self, request):
+        try:
+            first_name = request.session.get('first_name')
+            last_name = request.session.get('last_name')
+            if (first_name is None) or (last_name is None):
+                return Response({'error': 'Temp user not found'}, status=status.HTTP_404_NOT_FOUND)
+            # tempUser = RegisterAccountTemp.objects.get(id=user_id)
+            return Response({
+                'first_name': first_name,
+                'last_name': last_name,
+            }, status=status.HTTP_200_OK)
+        except RegisterAccountTemp.DoesNotExist:
+            return Response({'error': 'Temp user not found'}, status=status.HTTP_404_NOT_FOUND)
+        # if not user_id:
+        
+        
+class UserNameView(APIView):
+    def post(self, request):
+        user_id = request.session.get(TEMP_ID)
+        if not user_id:
+            return redirect(f'{settings.BASE_FRONTEND_URL}/signup')
+        try:
+            tempUser = RegisterAccountTemp.objects.get(id=user_id)
+            username = request.data.get('username')
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            User.objects.create_user(
+                username=username,
+                email=tempUser.email,
                 first_name=first_name,
                 last_name=last_name,
             )
-         
-            request.session['tempUser_id'] = tempUser.id
-            request.session.save()
-            return Response(status=status.HTTP_201_CREATED)
-        
-class UserNameView(APIView):
-    def get(self, request):
-        user = request.user
-        return Response({'username': user.username})
-        
+
+        except RegisterAccountTemp.DoesNotExist:
+            return redirect(f'{settings.BASE_FRONTEND_URL}/signup')
         
         
 class RegisterView(APIView):
@@ -101,12 +145,14 @@ class RegisterView(APIView):
         if not email:
             return Response({'error': 'Email not found in session'}, status=status.HTTP_400_BAD_REQUEST)
         request.data['email'] = email
+
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             login(request, user)  # Log in the user
             request.session.set_expiry(12000000)  # Session expires when the browser is closed
-            request.session['user_id'] = user.id  # Save user id in session
+            # request.session['user_id'] = user.id  # Save user id in session
+            request.session.save()
             return Response({'message': 'Registration successful'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
