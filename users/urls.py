@@ -11,9 +11,13 @@ from users.views import (
     UserNameView,
     TempUserView,
     IsUserNameAvailable,
+    GetUserName,
+    UserView,
+    GetProfileFromUserName,
 )
 
 urlpatterns = [
+    path("", UserView.as_view(), name="user"),
     path("login/", LoginView.as_view(), name="login"),
     path("register/", RegisterView.as_view(), name="register"),
     path("logout/", LogoutView.as_view(), name="logout"),
@@ -24,4 +28,6 @@ urlpatterns = [
     path("username/", UserNameView.as_view(), name="username"),
     path("tempuser/", TempUserView.as_view(), name="tempuser"),
     path("checkusername/", IsUserNameAvailable.as_view(), name="checkusername"),
+    path("getusername/", GetUserName.as_view(), name="getusername"),
+    path("<str:username>/", GetProfileFromUserName.as_view()),
 ]

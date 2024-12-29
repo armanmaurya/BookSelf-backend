@@ -9,4 +9,4 @@ class NotebookFormSerializer(serializers.ModelSerializer):
 class NotebookGetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notebook
-        fields = "__all__"
+        fields = ["id", "name", "slug","description", "created_at"]
