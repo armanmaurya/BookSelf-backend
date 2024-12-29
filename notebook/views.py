@@ -38,8 +38,32 @@ class NoteBookView(APIView):
 
     @permission_classes([IsAuthenticated])
     def post(self, request):
+        '''
+        data: {
+            "name": "Notebook name",
+            "description": "Optional description"    
+        }
+        '''
         serializer = NotebookFormSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user = request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    @permission_classes([IsAuthenticated])
+    def patch(self, request, slug, *args, **kwargs):
+        user = request.user
+        notebook = Notebook.objects.get(slug=slug, user=user)
+        serializer = NotebookFormSerializer(notebook, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @permission_classes([IsAuthenticated])
+    def delete(self, request, slug):
+        user = request.user
+        notebook = Notebook.objects.get(slug=slug, user=user)
+        notebook.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
