@@ -11,3 +11,8 @@ class PageCreateFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Page
         fields = ["title"]
+
+class PageUpdateFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Page
+        fields = ["title", "content"]

@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Notebook
 from page.models import Page
 from page.views import getNotebookPage
-from page.serializers import PageSerializer
+from page.serializers import PageSerializer, PageUpdateFormSerializer
 
 from users.models import CustomUser as User
 
@@ -89,20 +89,50 @@ class NoteBookPageView(APIView):
             )
 
     @permission_classes([IsAuthenticated])
-    def patch(self, request, slug, *args, **kwargs):
+    def patch(self, request, username=None, slug=None, path=None):
         """
         {
-            "name": "New name", (optional)
-            "overview": "New overview" (optional)
+            "title": "New title", (optional)
+            "content": "New content" (optional)
         }
         """
-        user = request.user
-        notebook = Notebook.objects.get(slug=slug, user=user)
-        serializer = NotebookFormSerializer(notebook, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if slug and username and path:
+            try:
+                page = self.get_page(username, slug, path)
+                serializer = PageUpdateFormSerializer(page, data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            except Page.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND, data={"error": "Page not found"}
+                )
+            except Notebook.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND,
+                    data={"error": "Notebook not found"},
+                )
+            except User.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"}
+                )
+        elif slug and username:
+            try:
+                notebook = self.get_notebook(username, slug)
+                serializer = NotebookGetSerializer(notebook)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Notebook.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND,
+                    data={"error": "Notebook not found"},
+                )
+            except User.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"}
+                )
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
 
     # @permission_classes([IsAuthenticated])
     def delete(self, request, username=None, slug=None, path=None):
