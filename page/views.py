@@ -5,6 +5,8 @@ from .serializers import PageSerializer
 # Create your views here.
 
 def getNotebookPage(notebook, page_path):
+    if page_path is None:
+        return None
     path = page_path.split("/")
     print(path)
     page = None
