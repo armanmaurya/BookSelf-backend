@@ -4,7 +4,7 @@ from rest_framework import serializers
 class PageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Page
-        fields = ["id", "title", "content", "created_at", "updated_at", "notebook", "parent", "index", "has_children"]
+        fields = ["id", "title", "content", "created_at", "updated_at", "notebook", "parent", "index", "has_children", "slug"]
 
 
 class PageCreateFormSerializer(serializers.ModelSerializer):
