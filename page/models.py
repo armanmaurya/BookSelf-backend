@@ -33,6 +33,8 @@ class Page(models.Model):
                 self.slug = slugify(self.title)
         else:
             self.slug = slugify(self.title)
+            if Page.objects.filter(slug=self.slug, parent = self.parent).exists():
+                raise ValueError("A page with this slug already exists.")
         super(Page, self).save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):

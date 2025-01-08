@@ -121,31 +121,54 @@ class NoteBookPageView(APIView):
         }
         """
         if username and slug and path:
-            user = User.objects.get(username=username)
-            notebook = Notebook.objects.get(slug=slug, user=user)
-            parent = getNotebookPage(notebook, path)
+            try:
+                user = User.objects.get(username=username)
+                notebook = Notebook.objects.get(slug=slug, user=user)
+                parent = getNotebookPage(notebook, path)
 
-            currentPage = Page.objects.create(
-                title=request.data["title"],
-                parent=parent,
-                notebook=notebook
-            )
-            serializer = PageSerializer(currentPage)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                currentPage = Page.objects.create(
+                    title=request.data["title"],
+                    parent=parent,
+                    notebook=notebook
+                )
+                serializer = PageSerializer(currentPage)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Page.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND, data={"error": "Page not found"}
+                )
+            except Notebook.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND,
+                    data={"error": "Notebook not found"},
+                )
+            except User.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"}
+                )
+            except ValueError as e:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)}
+                )
         if username and slug:
-            user = User.objects.get(username=username)
-            notebook = Notebook.objects.get(slug=slug, user=user)
-            parent = None
-            if "parent" in request.data:
-                parent_path = request.data["parent"]
-                parent = getNotebookPage(notebook, parent_path)
-            currentPage = Page.objects.create(
-                title=request.data["title"],
-                parent=parent,
-                notebook=notebook
-            )
-            serializer = PageSerializer(currentPage)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                user = User.objects.get(username=username)
+                notebook = Notebook.objects.get(slug=slug, user=user)
+                parent = None
+                if "parent" in request.data:
+                    parent_path = request.data["parent"]
+                    parent = getNotebookPage(notebook, parent_path)
+                currentPage = Page.objects.create(
+                    title=request.data["title"],
+                    parent=parent,
+                    notebook=notebook
+                )
+                serializer = PageSerializer(currentPage)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except ValueError as e:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)}
+                )
         elif username:
             try:
                 user = User.objects.get(username=username)
@@ -157,33 +180,10 @@ class NoteBookPageView(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except KeyError:
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "Name is required"})
-        # logged_user = request.user
-        # if logged_user != request_user:
-        #     return Response(status=status.HTTP_401_UNAUTHORIZED, data={"error": "Unauthorized"})
-        # try:
-        #     # request_user = User.objects.get(username=username)
-        #     serializer = PageCreateFormSerializer(data=request.data)
-        #     notebook = self.get_notebook(username, slug)
-        #     parent = None
-        #     if path != None:
-        #         parent = getNotebookPage(notebook, path)
-        #     if serializer.is_valid():
-        #         serializer.save(notebook=notebook, parent=parent)
-        #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        # except Page.DoesNotExist:
-        #         return Response(
-        #             status=status.HTTP_404_NOT_FOUND, data={"error": "Page not found"}
-        #         )
-        # except Notebook.DoesNotExist:
-        #     return Response(
-        #         status=status.HTTP_404_NOT_FOUND,
-        #         data={"error": "Notebook not found"},
-        #     )
-        # except User.DoesNotExist:
-        #     return Response(
-        #         status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"}
-        #     )
+            except ValueError as e:
+                return Response(
+                    status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)}
+                )
 
     @permission_classes([IsAuthenticated])
     def patch(self, request, username=None, slug=None, path=None):
