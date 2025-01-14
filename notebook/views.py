@@ -27,6 +27,7 @@ class NoteBookPageView(APIView):
 
     def get(self, request, username=None, slug=None, path=None):
         isChildrens = request.query_params.get("children")
+        isIndex = request.query_params.get("index")
         if slug and username and path and isChildrens is not None:
             try:
                 notebook = self.get_notebook(username, slug)
@@ -43,6 +44,19 @@ class NoteBookPageView(APIView):
             except User.DoesNotExist:
                 return Response(
                     status=status.HTTP_404_NOT_FOUND, data={"error": "User not found"}
+                )
+        elif slug and username and path and isIndex is not None:
+            try:
+                notebook = self.get_notebook(username, slug)
+                index_page = notebook.get_index_page()
+                if index_page:
+                    serializer = PageSerializer(index_page)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_404_NOT_FOUND, data={"error": "Index page not found"})
+            except Notebook.DoesNotExist:
+                return Response(
+                    status=status.HTTP_404_NOT_FOUND,
+                    data={"error": "Notebook not found"},
                 )
         elif slug and username and path:
             try:
@@ -196,7 +210,7 @@ class NoteBookPageView(APIView):
         if slug and username and path:
             try:
                 page = self.get_page(username, slug, path)
-                serializer = PageUpdateFormSerializer(page, data=request.data)
+                serializer = PageUpdateFormSerializer(page, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     return Response(serializer.data, status=status.HTTP_200_OK)
