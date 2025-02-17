@@ -298,3 +298,68 @@ class NoteBookPageView(APIView):
         notebook = Notebook.objects.get(slug=slug, user=user)
         return notebook
 
+
+class NoteBookView(APIView):
+    authentication_classes = [SessionAuthentication]
+
+    def get(self, request):
+        all_notebooks = Notebook.objects.all()
+        serializer = NotebookGetSerializer(all_notebooks, many=True)
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+    @permission_classes([IsAuthenticated])
+    def post(self, request):
+        """
+        {
+            "name": "Notebook name"
+        }
+        """
+        try:
+            createdNotebook = Notebook.objects.create(
+                name=request.data["name"],
+                user=request.user
+            )
+            serializer = NotebookGetSerializer(createdNotebook)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except KeyError:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "Name is required"})
+        except ValueError as e:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST, data={"error": str(e)}
+            )
+
+    @permission_classes([IsAuthenticated])
+    def patch(self, request):
+        """
+        {
+            "name": "New name"
+        }
+        """
+        try:
+            notebook = Notebook.objects.get(slug=request.data["slug"], user=request.user)
+            serializer = NotebookFormSerializer(notebook, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Notebook.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data={"error": "Notebook not found"},
+            )
+
+    @permission_classes([IsAuthenticated])
+    def delete(self, request):
+        try:
+            notebook = Notebook.objects.get(slug=request.data["slug"], user=request.user)
+            notebook.delete()
+            return Response(
+                status=status.HTTP_204_NO_CONTENT,
+                data={"message": "Notebook deleted successfully"},
+            )
+        except Notebook.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data={"error": "Notebook not found"},
+            )
+        return Response(status=status.HTTP_404_NOT_FOUND)

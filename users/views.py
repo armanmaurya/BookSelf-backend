@@ -11,7 +11,6 @@ from .utils import google_get_access_token, google_get_user_info
 from users.models import CustomUser as User, EmailVerification
 from users.serializers import (
     GoogleAuthInputSerializer,
-    RegisterAccountTempSerializer,
     RegisterSerializer,
     LoginSerializer,
     EmailVerificationSerializer,
@@ -89,7 +88,8 @@ class UserView(APIView):
             request.session["user_id"] = user.id
             login(request, user)
             request.session.save()
-            return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             first_name = user_data.get("given_name", "")
             last_name = user_data.get("family_name", "")
@@ -105,6 +105,7 @@ class UserView(APIView):
             request.session["first_name"] = first_name
             request.session["last_name"] = last_name
             request.session.save()
+
             response = Response(status=status.HTTP_201_CREATED)
             # response.set_cookie(TEMP_ID, tempUser[0].id)
             return response

@@ -21,6 +21,7 @@ User = CustomUser
 
 # Create your views here.
 
+
 class GetChildrenArticle(APIView):
     def get(self, request):
         id = request.query_params.get("id")
@@ -29,6 +30,7 @@ class GetChildrenArticle(APIView):
             print(articles)
 
         return Response(status=status.HTTP_200_OK)
+
 
 class ArticleView(APIView):
     authentication_classes = [SessionAuthentication]
@@ -67,13 +69,7 @@ class ArticleView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         article = self.get_article(slug)
-        tags = request.data.get("tags")
-        if tags:
-            article.tags.clear()
-            article.tags.add(*tags)
-            return Response({"message": "Tags added"}, status=status.HTTP_200_OK)
-        updated_at = datetime.datetime.now()
-        request.data["updated_at"] = updated_at
+        print(request.data)
         serializer = ArticleSerializer(article, data=request.data, partial=True)
         if serializer.is_valid():
             print("valid")
@@ -94,7 +90,10 @@ class ArticleView(APIView):
             author_id = data["author"]
             author = User.objects.get(id=author_id)
             data["author"] = author.email
-            return Response({"data": data, "is_owner": author == request.user})
+            data["likes"] = article.get_likes_count()
+            data["liked"] = request.user in article.likes.all()
+            data["username"] = author.username
+            return Response(data)
         elif userId:
             articles = Article.objects.filter(author=userId)
             serializer = ArticleSerializer(articles, many=True)
@@ -111,6 +110,7 @@ class ArticleView(APIView):
             for article in data:
                 author_id = article["author"]
                 author = User.objects.get(id=author_id)
+                article["username"] = author.username
                 article["author"] = author.first_name + " " + author.last_name
             return Response(data)
 
@@ -124,6 +124,20 @@ class ArticleView(APIView):
         return []
 
 
+class LikeArticle(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        slug = request.query_params.get("slug")
+        article = Article.objects.get(slug=slug)
+        if request.user in article.likes.all():
+            article.likes.remove(request.user)
+            return Response({"message": "Unliked"})
+        article.likes.add(request.user)
+        return Response({"message": "Liked"})
+
+
 class CheckArticleOwner(APIView):
     authentication_classes = [SessionAuthentication]
 
@@ -134,6 +148,7 @@ class CheckArticleOwner(APIView):
         if article.author == request.user:
             return Response({"status": True})
         return Response({"status": False})
+
 
 class MyArticlesView(APIView):
     authentication_classes = [SessionAuthentication]
@@ -147,6 +162,7 @@ class MyArticlesView(APIView):
             author = User.objects.get(id=author_id)
             article["author"] = author.first_name + " " + author.last_name
         return Response(data)
+
 
 class ArticleListView(APIView):
     def get(self, request):

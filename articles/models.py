@@ -7,6 +7,7 @@ import uuid
 from taggit.managers import TaggableManager
 from taggit.models import GenericUUIDTaggedItemBase, TaggedItemBase
 from django.utils.text import slugify
+from users.models import CustomUser
 
 # Create your models here.
 
@@ -19,6 +20,7 @@ class Article(models.Model):
     ]
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
+    likes = models.ManyToManyField(CustomUser, related_name="likes", blank=True)
     tags = TaggableManager()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,9 +39,16 @@ class Article(models.Model):
         if not self.id:
             super().save(*args, **kwargs)  
         self.slug = self.generate_unique_slug()
-        super().save()  
-        
+        super().save()
 
+    def like(self, user):
+        self.likes.add(user)
+
+    def unlike(self, user):
+        self.likes.remove(user)
+
+    def get_likes_count(self):
+        return self.likes.count() 
 
     def generate_unique_slug(self):
         print(self.id)

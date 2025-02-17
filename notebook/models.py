@@ -8,7 +8,6 @@ from users.models import CustomUser
 class Notebook(models.Model):
     class AlreadyExist(Exception):
         """Exception raised when a notebook already exists."""
-
         pass
 
     slug = models.SlugField(max_length=100)  # Unique identifier
@@ -16,6 +15,7 @@ class Notebook(models.Model):
     overview = models.TextField(blank=True, null=True)  # Optional description
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    cover = models.ImageField(upload_to='notebook_covers/', blank=True, null=True)
 
     def get_index_page(self):
         from page.models import Page
