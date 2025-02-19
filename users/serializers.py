@@ -1,16 +1,46 @@
-from django.shortcuts import redirect
 from rest_framework import serializers
-from .models import CustomUser as User, EmailVerification, RegisterAccountTemp
+from .models import CustomUser as User, EmailVerification, RegisterAccountTemp, Follow
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 
 
 class UserSerializer(serializers.ModelSerializer):
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+    is_self = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "email"]
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "followers_count",
+            "following_count",
+            "is_following",
+            "is_self",
+        ]
+
+    def get_followers_count(self, obj):
+        return Follow.objects.filter(following=obj).count()
+
+    def get_following_count(self, obj):
+        return Follow.objects.filter(user=obj).count()
+
+    def get_is_following(self, obj):
+        request = self.context.get("request", None)
+        if request and request.user.is_authenticated:
+            return Follow.objects.filter(user=request.user, following=obj).exists()
+        return False
+
+    def get_is_self(self, obj):
+        request = self.context.get("request", None)
+        if request and request.user.is_authenticated:
+            return request.user == obj
+        return False
 
 
 class GoogleAuthInputSerializer(serializers.Serializer):
@@ -23,7 +53,6 @@ class RegisterAccountTempSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegisterAccountTemp
         fields = ["email", "first_name", "last_name"]
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(

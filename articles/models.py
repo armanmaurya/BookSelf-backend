@@ -11,6 +11,7 @@ from users.models import CustomUser
 
 # Create your models here.
 
+
 class Article(models.Model):
     DRAFT = "DR"
     PUBLISHED = "PU"
@@ -28,16 +29,16 @@ class Article(models.Model):
     thumbnail = models.ImageField(upload_to="thumbnails/", null=True, blank=True)
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=DRAFT)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
-    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE)
+    views = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         if self.title:
             return self.title
         return "Untitled"
 
-    def save(self, *args, **kwargs): 
+    def save(self, *args, **kwargs):
         if not self.id:
-            super().save(*args, **kwargs)  
+            super().save(*args, **kwargs)
         self.slug = self.generate_unique_slug()
         super().save()
 
@@ -48,7 +49,7 @@ class Article(models.Model):
         self.likes.remove(user)
 
     def get_likes_count(self):
-        return self.likes.count() 
+        return self.likes.count()
 
     def generate_unique_slug(self):
         print(self.id)
@@ -60,3 +61,12 @@ class Article(models.Model):
             slug = str(self.id)
 
         return slug
+
+
+class UserArticlesVisitHistory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} visited {self.article.title} at {self.timestamp}"

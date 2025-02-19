@@ -52,3 +52,15 @@ class EmailVerification(models.Model):
         
     def __str__(self):
         return self.email
+    
+
+class Follow(models.Model):
+    user = models.ForeignKey(CustomUser, related_name='followers', on_delete=models.CASCADE)
+    following = models.ForeignKey(CustomUser, related_name='following', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'following')
+
+    def __str__(self):
+        return f"{self.user.username} follows {self.following.username}"
+    

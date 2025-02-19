@@ -6,15 +6,15 @@ from rest_framework.permissions import IsAuthenticated
 
 # from django.contrib.auth import get_user_model
 from users.models import CustomUser
+from users.serializers import UserSerializer
 
-from articles.models import Article
+from articles.models import Article, UserArticlesVisitHistory
 from .serializers import ArticleUploadSerializer, ArticleSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.authentication import SessionAuthentication
 from articles.models import Article
-import datetime
 
 
 User = CustomUser
@@ -86,33 +86,41 @@ class ArticleView(APIView):
             print(request.user)
             article = self.get_article(slug)
             serializer = ArticleSerializer(article)
-            data = serializer.data
-            author_id = data["author"]
+            articleData = serializer.data
+            articleData["likes"] = article.get_likes_count()
+            articleData["liked"] = request.user in article.likes.all()
+            article.views += 1
+            if request.user.is_authenticated:
+                UserArticlesVisitHistory.objects.create(
+                    user=request.user, article=article
+                )
+
+            author_id = articleData["author"]
             author = User.objects.get(id=author_id)
-            data["author"] = author.email
-            data["likes"] = article.get_likes_count()
-            data["liked"] = request.user in article.likes.all()
-            data["username"] = author.username
-            return Response(data)
+
+            context = {"request": request}
+            serializer = UserSerializer(author, context=context)
+            authorData = serializer.data
+            return Response({"article": articleData, "author": authorData})
         elif userId:
             articles = Article.objects.filter(author=userId)
             serializer = ArticleSerializer(articles, many=True)
-            data = serializer.data
-            for article in data:
+            articleData = serializer.data
+            for article in articleData:
                 author_id = article["author"]
                 author = User.objects.get(id=author_id)
                 article["author"] = author.first_name + " " + author.last_name
-            return Response(data)
+            return Response(articleData)
         else:
             articles = Article.objects.all()
             serializer = ArticleSerializer(articles, many=True)
-            data = serializer.data
-            for article in data:
+            articleData = serializer.data
+            for article in articleData:
                 author_id = article["author"]
                 author = User.objects.get(id=author_id)
                 article["username"] = author.username
                 article["author"] = author.first_name + " " + author.last_name
-            return Response(data)
+            return Response(articleData)
 
     def get_permissions(self):
         if self.request.method == "POST":

@@ -17,13 +17,15 @@ from users.serializers import (
     UserSerializer,
     VerifyCodeSerializer,
 )
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import login, logout  # If used custom user model
 from django.core.mail import send_mail
 from django.utils import timezone
 import random
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
-from .models import RegisterAccountTemp
+from .models import RegisterAccountTemp, Follow
 
 
 TEMP_ID = "tempUser_id"
@@ -38,6 +40,56 @@ def generate_tokens_for_user(user):
     access_token = token_data.access_token
     refresh_token = token_data
     return access_token, refresh_token
+
+
+class FollowView(APIView):
+    authentication_classes = [SessionAuthentication]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAuthenticated()]
+        if self.request.method == "PATCH":
+            return [IsAuthenticated()]
+        if self.request.method == "DELETE":
+            return [IsAuthenticated()]
+        return []
+
+    # Get All the followers of the user
+    def get(self, request, username):
+        type = request.query_params.get("type")
+        user = get_object_or_404(User, username=username)
+        if type == "following":
+            following = Follow.objects.filter(user=user).select_related('following')
+            serializer = UserSerializer([follow.following for follow in following], many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        elif type == "followers":
+            followers = Follow.objects.filter(following=user).select_related('user')
+            serializer = UserSerializer([follow.user for follow in followers], many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid type"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, username):
+        user = User.objects.get(username=username)
+
+        # Check if the user is trying to follow themselves
+        if request.user == user:
+            return Response(
+                {"message": "You can't follow yourself"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check if the user is already following the user
+        follow, created = Follow.objects.get_or_create(
+            user=request.user, following=user
+        )
+
+        # If the user is already following the user, then unfollow
+        if not created:
+            follow.delete()
+            return Response({"message": "Unfollowed"}, status=status.HTTP_200_OK)
+
+        return Response({"message": "Followed"}, status=status.HTTP_200_OK)
 
 
 class UserView(APIView):
@@ -112,11 +164,26 @@ class UserView(APIView):
 
 
 class GetProfileFromUserName(APIView):
+    authentication_classes = [SessionAuthentication]
+
     def get(self, request, username):
         user = User.objects.get(username=username)
         serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        data = serializer.data
+
+        if not request.user.is_authenticated:
+            data["is_following"] = False
+        elif request.user != user:
+            try:
+                follow = Follow.objects.get(user=request.user, following=user)
+                data["is_following"] = True
+            except Follow.DoesNotExist:
+                data["is_following"] = False
+
+        data["followers"] = Follow.objects.filter(following=user).count()
+        data["following"] = Follow.objects.filter(user=user).count()
+        return Response(data, status=status.HTTP_200_OK)
+
 
 class GetUserName(APIView):
     def get(self, request):

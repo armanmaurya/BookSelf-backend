@@ -14,10 +14,12 @@ from users.views import (
     GetUserName,
     UserView,
     GetProfileFromUserName,
+    FollowView,
 )
 
 urlpatterns = [
     path("", UserView.as_view(), name="user"),
+    path("follow/<str:username>/", FollowView.as_view(), name="follow"),
     path("login/", LoginView.as_view(), name="login"),
     path("register/", RegisterView.as_view(), name="register"),
     path("logout/", LogoutView.as_view(), name="logout"),
@@ -29,5 +31,5 @@ urlpatterns = [
     path("tempuser/", TempUserView.as_view(), name="tempuser"),
     path("checkusername/", IsUserNameAvailable.as_view(), name="checkusername"),
     path("getusername/", GetUserName.as_view(), name="getusername"),
-    path("<str:username>/", GetProfileFromUserName.as_view()),
+    path("profile/<str:username>/", GetProfileFromUserName.as_view()),
 ]
