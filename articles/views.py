@@ -86,22 +86,22 @@ class ArticleView(APIView):
             print(request.user)
             article = self.get_article(slug)
             serializer = ArticleSerializer(article)
-            articleData = serializer.data
-            articleData["likes"] = article.get_likes_count()
-            articleData["liked"] = request.user in article.likes.all()
-            article.views += 1
-            if request.user.is_authenticated:
-                UserArticlesVisitHistory.objects.create(
-                    user=request.user, article=article
-                )
+            # articleData = serializer.data
+            # articleData["likes"] = article.get_likes_count()
+            # articleData["liked"] = request.user in article.likes.all()
+            # article.views += 1
+            # if request.user.is_authenticated:
+            #     UserArticlesVisitHistory.objects.create(
+            #         user=request.user, article=article
+            #     )
 
-            author_id = articleData["author"]
-            author = User.objects.get(id=author_id)
+            # author_id = articleData["author"]
+            # author = User.objects.get(id=author_id)
 
-            context = {"request": request}
-            serializer = UserSerializer(author, context=context)
-            authorData = serializer.data
-            return Response({"article": articleData, "author": authorData})
+            # context = {"request": request}
+            # serializer = UserSerializer(author, context=context)
+            # authorData = serializer.data
+            return Response(serializer.data)
         elif userId:
             articles = Article.objects.filter(author=userId)
             serializer = ArticleSerializer(articles, many=True)
@@ -113,13 +113,13 @@ class ArticleView(APIView):
             return Response(articleData)
         else:
             articles = Article.objects.all()
-            serializer = ArticleSerializer(articles, many=True)
+            serializer = ArticleSerializer(articles, many=True) 
             articleData = serializer.data
-            for article in articleData:
-                author_id = article["author"]
-                author = User.objects.get(id=author_id)
-                article["username"] = author.username
-                article["author"] = author.first_name + " " + author.last_name
+            # for article in articleData:
+            #     author_id = article["author"]
+            #     author = User.objects.get(id=author_id)
+            #     article["username"] = author.username
+            #     article["author"] = author.first_name + " " + author.last_name
             return Response(articleData)
 
     def get_permissions(self):

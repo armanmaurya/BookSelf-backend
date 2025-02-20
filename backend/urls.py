@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from .views import home
+from strawberry.django.views import GraphQLView
+from .schema import schema
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,5 +26,7 @@ urlpatterns = [
     path("account/", include("users.urls")),
     path("article/", include("articles.urls")),
     path("notebook/", include("notebook.urls")),
-    path("", home)
+    path("", home),
+    path("graphql", GraphQLView.as_view(schema=schema)),
+    
 ]
