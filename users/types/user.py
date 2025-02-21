@@ -43,5 +43,4 @@ class UserType:
         if isinstance(currentUser, AnonymousUser):
             return False
         return self.username == info.context.request.user.username 
-     
-    
+

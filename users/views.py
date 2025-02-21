@@ -118,49 +118,53 @@ class UserView(APIView):
 
         code = validated_data.get("code")
         error = validated_data.get("error")
-        redirect_path = validated_data.get("redirect_path")
+        print("code", code)
 
-        login_url = f"{settings.BASE_FRONTEND_URL}/login"
 
-        if error or not code:
-            params = urlencode({"error": error})
-            return Response(
-                {"message": "Login failed"}, status=status.HTTP_400_BAD_REQUEST
-            )
-            # print(f'{login_url}?{params}')
-            # return redirect(f'{login_url}?{params}')
+        # redirect_path = validated_data.get("redirect_path")
 
-        redirect_uri = f"{settings.BASE_FRONTEND_URL}{redirect_path}"
-        access_token = google_get_access_token(code=code, redirect_uri=redirect_uri)
+        # login_url = f"{settings.BASE_FRONTEND_URL}/login"
 
-        user_data = google_get_user_info(access_token=access_token)
+        # if error or not code:
+        #     params = urlencode({"error": error})
+        #     return Response(
+        #         {"message": "Login failed"}, status=status.HTTP_400_BAD_REQUEST
+        #     )
+        #     # print(f'{login_url}?{params}')
+        #     # return redirect(f'{login_url}?{params}')
 
-        try:
-            user = User.objects.get(email=user_data["email"])
-            request.session["user_id"] = user.id
-            login(request, user)
-            request.session.save()
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            first_name = user_data.get("given_name", "")
-            last_name = user_data.get("family_name", "")
+        # redirect_uri = f"{settings.BASE_FRONTEND_URL}{redirect_path}"
+        # access_token = google_get_access_token(code=code, redirect_uri=redirect_uri)
 
-            # tempUser = RegisterAccountTemp.objects.get_or_create(
-            #     email=user_data['email'],
-            #     first_name=first_name,
-            #     last_name=last_name,
-            # )
+        # user_data = google_get_user_info(access_token=access_token)
 
-            # request.session[TEMP_ID] = tempUser[0].id
-            request.session["email"] = user_data.get("email")
-            request.session["first_name"] = first_name
-            request.session["last_name"] = last_name
-            request.session.save()
+        # try:
+        #     user = User.objects.get(email=user_data["email"])
+        #     request.session["user_id"] = user.id
+        #     # login(request, user)
+        #     request.session.save()
+        #     serializer = UserSerializer(user)
+        #     return Response(serializer.data, status=status.HTTP_200_OK)
+        # except User.DoesNotExist:
+        #     first_name = user_data.get("given_name", "")
+        #     last_name = user_data.get("family_name", "")
 
-            response = Response(status=status.HTTP_201_CREATED)
-            # response.set_cookie(TEMP_ID, tempUser[0].id)
-            return response
+        #     # tempUser = RegisterAccountTemp.objects.get_or_create(
+        #     #     email=user_data['email'],
+        #     #     first_name=first_name,
+        #     #     last_name=last_name,
+        #     # )
+
+        #     # request.session[TEMP_ID] = tempUser[0].id
+        #     request.session["email"] = user_data.get("email")
+        #     request.session["first_name"] = first_name
+        #     request.session["last_name"] = last_name
+        #     request.session.save()
+
+        #     response = Response(status=status.HTTP_201_CREATED)
+        #     # response.set_cookie(TEMP_ID, tempUser[0].id)
+        #     return response
+        return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
 
 
 class GetProfileFromUserName(APIView):

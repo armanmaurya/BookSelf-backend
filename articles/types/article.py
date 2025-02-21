@@ -10,9 +10,9 @@ from .article_comments import CommentType
 @strawberry_django.type(Article)
 class ArticleType:
     id: strawberry.ID
-    title: str
+    title: str | None
     slug: str
-    content: str
+    content: str | None
     views: int
     created_at: str
     author: UserType
