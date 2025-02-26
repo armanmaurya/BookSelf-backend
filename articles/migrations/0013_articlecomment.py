@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('articles', '0012_article_views_userarticlesvisithistory'),
+        ('articles', '0011_remove_article_parent'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

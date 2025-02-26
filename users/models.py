@@ -20,7 +20,7 @@ class CustomUser(AbstractUser):
     registration_method = models.CharField(
         max_length=10, choices=REGISTRATION_CHOICES, default="email"
     )
-
+    profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
@@ -57,6 +57,7 @@ class EmailVerification(models.Model):
 class Follow(models.Model):
     user = models.ForeignKey(CustomUser, related_name='followers', on_delete=models.CASCADE)
     following = models.ForeignKey(CustomUser, related_name='following', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'following')

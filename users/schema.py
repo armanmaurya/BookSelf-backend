@@ -1,9 +1,10 @@
 from django.conf import settings
 import strawberry
-from users.types.user import UserType
+from users.types.user import UserType, SelfUserType
 from users.models import CustomUser
 from strawberry.types import Info
-from typing import List
+from typing import List, Optional
+from strawberry.file_uploads import Upload
 from .utils import google_get_access_token, google_get_user_info
 from django.contrib.auth import login, logout
 from .types.googleAuth import GoogleAuthType
@@ -19,7 +20,7 @@ class Query:
         return CustomUser.objects.get(username=username)
     
     @strawberry.field
-    def me(self, info: Info) -> UserType | None:
+    def me(self, info: Info) -> SelfUserType | None:
         user = info.context.request.user
         print("user", user)
         if user.is_authenticated:
@@ -53,3 +54,22 @@ class Mutation:
             info.context.request.session.save()
             googleAuth.is_created = True
             return googleAuth
+        
+    @strawberry.mutation
+    def logout(self, info: Info) -> bool:
+        logout(info.context.request)
+        return True
+    
+    @strawberry.mutation
+    def update_user(self, info: Info, first_name: Optional[Upload], last_name: Optional[Upload], profile_picture: Optional[Upload]) -> SelfUserType:
+        user = info.context.request.user
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+        return user
+    
+    @strawberry.mutation
+    def delete_user(self, info: Info) -> bool:
+        user = info.context.request.user
+        user.delete()
+        return True

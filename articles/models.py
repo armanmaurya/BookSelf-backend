@@ -64,18 +64,24 @@ class Article(models.Model):
 
 
 class UserArticlesVisitHistory(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="reading_history")
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="visitors")
+
+    last_visited = models.DateTimeField(auto_now=True)  # Updates on every visit
+    visit_count = models.PositiveIntegerField(default=1)  # Tracks repeated visits
+
+    class Meta:
+        unique_together = ("user", "article")  # Ensures only one entry per user-article
 
     def __str__(self):
-        return f"{self.user.username} visited {self.article.title} at {self.timestamp}"
+        return f"{self.user.username} visited {self.article.title} at {self.last_visited} {self.visit_count} times"
     
 
 class ArticleComment(models.Model):
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     content = models.TextField()
+    likes = models.ManyToManyField(CustomUser, related_name="comment_likes", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
 
@@ -88,4 +94,27 @@ class ArticleComment(models.Model):
     def get_child_comments(self):
         return ArticleComment.objects.filter(parent=self)
     
+
+class Collection(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="collections")
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    is_public = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set on creation
+    updated_at = models.DateTimeField(auto_now=True)  # Auto-set on update
+
+    def __str__(self):
+        return self.name
+
+class CollectionItem(models.Model):
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name="items")
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    order = models.PositiveIntegerField(default=0)
+    date_added = models.DateTimeField(auto_now_add=True)  # Track when the item was added
+
+    class Meta:
+        unique_together = ("collection", "article")
+        ordering = ["order"] # Order by the order field
     
+    def __str__(self):
+        return f"{self.collection.name} - {self.article.title}"

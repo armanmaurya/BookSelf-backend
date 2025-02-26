@@ -6,6 +6,8 @@ from articles.schema import Query as ArticleQuery, Mutation as ArticleMutation
 class Query(UserQuery, ArticleQuery):
     pass
 
-class Mutation(UserMutation):
+@strawberry.type
+class Mutation(ArticleMutation, UserMutation):
     pass
+
 schema = strawberry.Schema(query=Query, mutation=Mutation)
