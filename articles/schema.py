@@ -1,26 +1,72 @@
 import strawberry
-from typing import Collection, List, Optional
+from typing import Collection, List, Optional, Union, Annotated
+from strawberry.exceptions import StrawberryGraphQLError
+from strawberry.types import Info
 
 from articles.types.article_comments import CommentType
 from articles.types.collection import CollectionType
 from .types.article import ArticleType
-from articles.models import Article, ArticleComment, UserArticlesVisitHistory, Collection
+from articles.models import (
+    Article,
+    ArticleComment,
+    UserArticlesVisitHistory,
+    Collection,
+    CollectionItem,
+    ArticleDraft
+)
 from django.core.exceptions import ObjectDoesNotExist
+from articles.types.draft_article import ArticleDraftType
+from graphql import GraphQLError
 
+@strawberry.type
+class PermissionError:
+    message: str
+
+    def __str__(self) -> str:
+        return self.message
+    
+@strawberry.type
+class AuthencatationError:
+    message: str
+
+    def __str__(self) -> str:
+        return self.message
+    
+@strawberry.type
+class DraftArticleList:
+    articles: List[ArticleDraftType]  # ✅ Wrap the list inside an object
+    
+Response = Annotated[
+    Union[
+        ArticleDraftType, PermissionError
+    ],
+    strawberry.union("Response"),
+]
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def articles(self, info) -> List[ArticleType]:
-        return Article.objects.all()
+    def articles(self, info: Info, username: Optional[str] = None) -> List[ArticleType]:
+        # Build the filter dictionary
+        filter_dict = {"status": Article.PUBLISHED}
 
+        # # If the user is requesting it's own articles, return all the articles
+        # if (
+        #     info.context.request.user.is_authenticated
+        #     and info.context.request.user.username == username
+        # ):
+        #     filter_dict = {}
+        if username:
+            filter_dict["author__username"] = username
+
+        return Article.objects.filter(**filter_dict)
+
+    # TO:DO = Need to fix the only published article can be accesses
     @strawberry.field
     def article(self, info, slug: str) -> ArticleType:
-        article = Article.objects.get(slug=slug)
+        id = slug.split("-")[-1]
 
-        # Increment the article views
-        article.views += 1
-        article.save()
+        article = Article.objects.get(id=id)
 
         # Save the user visit history
         if info.context.request.user.is_authenticated:
@@ -35,7 +81,32 @@ class Query:
                     user=info.context.request.user, article=article
                 )
 
+        # Increment the article views
+        article.views += 1
+        article.save()
+
         return article
+    
+    @strawberry.field
+    def draft_article(self, info: Info, slug: str) -> Union[ArticleDraftType, PermissionError]:
+        try:
+            id = slug.split("-")[-1]
+            draft_article = ArticleDraft.objects.get(article__id=id)
+
+            if info.context.request.user != draft_article.article.author:
+                return PermissionError(message="You don't have permission to view this draft.")
+
+            return draft_article
+    
+        except ObjectDoesNotExist:
+            raise GraphQLError("Draft doesn't exist.")
+    
+    @strawberry.field
+    def draft_articles(self, info: Info) -> Union[AuthencatationError, DraftArticleList]:
+        if not info.context.request.user.is_authenticated:
+            return AuthencatationError(message="You must be logged in to view drafts.")
+        drafts = ArticleDraft.objects.filter(article__author=info.context.request.user).order_by("-updated_at")
+        return DraftArticleList(articles=drafts)  # ✅ Return wrapped list
 
     @strawberry.field
     def collection(self, info, id: int) -> CollectionType:
@@ -51,12 +122,13 @@ class Mutation:
     @strawberry.mutation
     def create_article(
         self, info, title: Optional[str], content: Optional[str]
-    ) -> ArticleType:
+    ) -> ArticleDraftType:
         author = info.context.request.user
         if not author.is_authenticated:
             raise Exception("You must be logged")
-        article = Article.objects.create(title=title, content=content, author=author)
-        return article
+        article = Article.objects.create(author=author)
+        draftArticle = ArticleDraft.objects.create(article=article, title=title, content=content)
+        return draftArticle
 
     @strawberry.mutation
     def update_article(
@@ -69,16 +141,35 @@ class Mutation:
         if not info.context.request.user.is_authenticated:
             raise Exception("You must be logged")
         article = Article.objects.get(slug=slug)
+        draftArticle = article.draft
 
         # Check if the user is the owner of the article
         if article.author != info.context.request.user:
             raise Exception("You Can't update Someone else's article")
         if title:
-            article.title = title
+            draftArticle.title = title
         if content:
-            article.content = content
-        article.save()
-        return article
+            draftArticle.content = content
+        draftArticle.save()
+        return draftArticle
+
+    @strawberry.mutation
+    def publish_article(self, info: Info, slug: str) -> str:
+        try:
+            article = Article.objects.get(slug=slug)
+            if info.context.request.user != article.author:
+                raise Exception("You Can't Publish Other Article")
+
+            draftArticle = article.draft
+
+            article.title = draftArticle.title
+            article.content = draftArticle.content
+            article.status = Article.PUBLISHED
+            article.save()
+            # print(article.slug)
+            return article.slug
+        except:
+            return ""
 
     @strawberry.mutation
     def delete_article(self, info, slug: str) -> bool:
@@ -182,7 +273,12 @@ class Mutation:
 
     @strawberry.mutation
     def update_collection(
-        self, info, id: int, is_public: Optional[bool] = None, name: Optional[str] = None, description: Optional[str] = None
+        self,
+        info,
+        id: int,
+        is_public: Optional[bool] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> CollectionType:
         if not info.context.request.user.is_authenticated:
             raise Exception("You must be logged")
@@ -218,18 +314,23 @@ class Mutation:
             return False
 
     @strawberry.mutation
-    def add_article_to_collection(
+    def toggle_add_article_to_collection(
         self, info, article_slug: str, collection_id: int
-    ) -> CollectionType:
+    ) -> bool:
         if not info.context.request.user.is_authenticated:
             raise Exception("You must be logged")
 
         try:
             collection = Collection.objects.get(id=collection_id)
             if collection.user != info.context.request.user:
-                raise Exception("You Can't add articles to Someone else's collection")
+                raise Exception("You can't modify Someone else's collection")
             article = Article.objects.get(slug=article_slug)
-            collection.articles.add(article)
-            return collection
+            collection_item, created = CollectionItem.objects.get_or_create(
+                collection=collection, article=article
+            )
+            if not created:
+                collection_item.delete()
+                return False
+            return True
         except ObjectDoesNotExist:
             raise Exception("Collection or Article does not exist")

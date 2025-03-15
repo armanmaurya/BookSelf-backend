@@ -35,9 +35,9 @@ class GetChildrenArticle(APIView):
 class ArticleView(APIView):
     authentication_classes = [SessionAuthentication]
 
-    def get_article(self, slug):
+    def get_article(self, id):
         try:
-            article = Article.objects.get(slug=slug)
+            article = Article.objects.get(id=id)
             return article
         except Article.DoesNotExist:
             raise ValidationError({"message": "Article not found"})
@@ -86,21 +86,6 @@ class ArticleView(APIView):
             print(request.user)
             article = self.get_article(slug)
             serializer = ArticleSerializer(article)
-            # articleData = serializer.data
-            # articleData["likes"] = article.get_likes_count()
-            # articleData["liked"] = request.user in article.likes.all()
-            # article.views += 1
-            # if request.user.is_authenticated:
-            #     UserArticlesVisitHistory.objects.create(
-            #         user=request.user, article=article
-            #     )
-
-            # author_id = articleData["author"]
-            # author = User.objects.get(id=author_id)
-
-            # context = {"request": request}
-            # serializer = UserSerializer(author, context=context)
-            # authorData = serializer.data
             return Response(serializer.data)
         elif userId:
             articles = Article.objects.filter(author=userId)

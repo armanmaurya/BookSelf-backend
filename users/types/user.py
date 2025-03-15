@@ -5,8 +5,7 @@ from typing import List, Optional
 from strawberry import LazyType
 from strawberry.types import Info
 from django.contrib.auth.models import AnonymousUser
-from articles.models import UserArticlesVisitHistory, Collection
-
+from articles.models import UserArticlesVisitHistory, Collection, Article
 
 
 @strawberry_django.type(CustomUser)
@@ -65,6 +64,9 @@ class UserType:
         return self.username == info.context.request.user.username
     
     @strawberry.field
+    def articles(self, info: Info) -> List[LazyType["ArticleType", "articles.types.article"]]: # type: ignore
+        return Article.objects.filter(author=self, status=Article.PUBLISHED)
+    @strawberry.field
     def collections(self, info: Info, number: int,  last_id: Optional[int] = None) -> List[LazyType["CollectionType", "articles.types.collection"]]: # type: ignore
         if last_id:
            return Collection.objects.filter(user=self, id__lt=last_id).order_by("-created_at")[:number]
@@ -82,3 +84,4 @@ class SelfUserType(UserType):
         if lastId:
             return UserArticlesVisitHistory.objects.filter(user=user, id__lt=lastId).order_by("-last_visited")[:number]
         return UserArticlesVisitHistory.objects.filter(user=user).order_by("-last_visited")[:number]        
+

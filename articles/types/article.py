@@ -18,6 +18,7 @@ class ArticleType:
     views: int
     created_at: str
     author: UserType
+    status: str
 
     @strawberry.field
     def is_self(self, info: Info) -> bool:

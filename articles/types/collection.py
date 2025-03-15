@@ -16,6 +16,10 @@ class CollectionType:
     def items(self, info) -> List["CollectionItemType"]:
         return self.items.all()
 
+    @strawberry.field
+    def is_added(self, info, article_slug: str) -> bool:
+        return CollectionItem.objects.filter(collection=self, article__slug=article_slug).exists()
+
 
 @strawberry_django.type(CollectionItem)
 class CollectionItemType:
