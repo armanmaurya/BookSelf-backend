@@ -16,6 +16,7 @@ class UserType:
     first_name: str
     last_name: str
     registration_method: str
+    about: Optional[str] = None
     # profile_picture: str
 
     @strawberry.field

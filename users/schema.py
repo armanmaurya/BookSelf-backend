@@ -12,7 +12,9 @@ from .types.googleAuth import GoogleAuthType
 @strawberry.type
 class Query:
     @strawberry.field
-    def users(self, info) -> List[UserType]:
+    def users(self, info, username: Optional[str] = None) -> List[UserType]:
+        if username:
+            return CustomUser.objects.filter(username__icontains=username)
         return CustomUser.objects.all()
 
     @strawberry.field
@@ -45,6 +47,7 @@ class Mutation:
             googleAuth.user = user
             return googleAuth
         except CustomUser.DoesNotExist:
+            print("User does not exist")
             first_name = user_info.get("given_name", "")
             last_name = user_info.get("family_name", "")
 

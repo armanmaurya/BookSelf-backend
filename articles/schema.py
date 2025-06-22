@@ -2,6 +2,7 @@ import strawberry
 from typing import Collection, List, Optional, Union, Annotated
 from strawberry.exceptions import StrawberryGraphQLError
 from strawberry.types import Info
+from strawberry.file_uploads import Upload
 
 from articles.types.article_comments import CommentType
 from articles.types.collection import CollectionType
@@ -12,11 +13,14 @@ from articles.models import (
     UserArticlesVisitHistory,
     Collection,
     CollectionItem,
-    ArticleDraft
+    ArticleDraft,
 )
 from django.core.exceptions import ObjectDoesNotExist
 from articles.types.draft_article import ArticleDraftType
 from graphql import GraphQLError
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
 
 @strawberry.type
 class PermissionError:
@@ -24,24 +28,26 @@ class PermissionError:
 
     def __str__(self) -> str:
         return self.message
-    
+
+
 @strawberry.type
 class AuthencatationError:
     message: str
 
     def __str__(self) -> str:
         return self.message
-    
+
+
 @strawberry.type
 class DraftArticleList:
     articles: List[ArticleDraftType]  # ✅ Wrap the list inside an object
-    
+
+
 Response = Annotated[
-    Union[
-        ArticleDraftType, PermissionError
-    ],
+    Union[ArticleDraftType, PermissionError],
     strawberry.union("Response"),
 ]
+
 
 @strawberry.type
 class Query:
@@ -50,12 +56,12 @@ class Query:
         # Build the filter dictionary
         filter_dict = {"status": Article.PUBLISHED}
 
-        # # If the user is requesting it's own articles, return all the articles
-        # if (
-        #     info.context.request.user.is_authenticated
-        #     and info.context.request.user.username == username
-        # ):
-        #     filter_dict = {}
+        # If the user is requesting it's own articles, return all the articles
+        if (
+            info.context.request.user.is_authenticated
+            and info.context.request.user.username == username
+        ):
+            filter_dict = {}
         if username:
             filter_dict["author__username"] = username
 
@@ -86,26 +92,34 @@ class Query:
         article.save()
 
         return article
-    
+
     @strawberry.field
-    def draft_article(self, info: Info, slug: str) -> Union[ArticleDraftType, PermissionError]:
+    def draft_article(
+        self, info: Info, slug: str
+    ) -> Union[ArticleDraftType, PermissionError]:
         try:
             id = slug.split("-")[-1]
             draft_article = ArticleDraft.objects.get(article__id=id)
 
             if info.context.request.user != draft_article.article.author:
-                return PermissionError(message="You don't have permission to view this draft.")
+                return PermissionError(
+                    message="You don't have permission to view this draft."
+                )
 
             return draft_article
-    
+
         except ObjectDoesNotExist:
             raise GraphQLError("Draft doesn't exist.")
-    
+
     @strawberry.field
-    def draft_articles(self, info: Info) -> Union[AuthencatationError, DraftArticleList]:
+    def draft_articles(
+        self, info: Info
+    ) -> Union[AuthencatationError, DraftArticleList]:
         if not info.context.request.user.is_authenticated:
             return AuthencatationError(message="You must be logged in to view drafts.")
-        drafts = ArticleDraft.objects.filter(article__author=info.context.request.user).order_by("-updated_at")
+        drafts = ArticleDraft.objects.filter(
+            article__author=info.context.request.user
+        ).order_by("-updated_at")
         return DraftArticleList(articles=drafts)  # ✅ Return wrapped list
 
     @strawberry.field
@@ -114,7 +128,6 @@ class Query:
 
     # @strawberry.field
     # def collections(self, info,number: int, username: Optional[str] = None, last_id: Optional[str] = None) -> List[CollectionType]:
-
 
 
 @strawberry.type
@@ -127,7 +140,9 @@ class Mutation:
         if not author.is_authenticated:
             raise Exception("You must be logged")
         article = Article.objects.create(author=author)
-        draftArticle = ArticleDraft.objects.create(article=article, title=title, content=content)
+        draftArticle = ArticleDraft.objects.create(
+            article=article, title=title, content=content
+        )
         return draftArticle
 
     @strawberry.mutation
@@ -137,12 +152,16 @@ class Mutation:
         slug: str,
         title: Optional[str] = None,
         content: Optional[str] = None,
+        image: Optional[Upload] = None,
     ) -> ArticleType:
         if not info.context.request.user.is_authenticated:
             raise Exception("You must be logged")
         article = Article.objects.get(slug=slug)
         draftArticle = article.draft
-
+        # Print everything
+        print("Title:", title)
+        print("Content:", content)
+        print("Image:", image)
         # Check if the user is the owner of the article
         if article.author != info.context.request.user:
             raise Exception("You Can't update Someone else's article")
@@ -150,8 +169,13 @@ class Mutation:
             draftArticle.title = title
         if content:
             draftArticle.content = content
+        if image:
+            file_content = ContentFile(image.read())
+            file_name = default_storage.save(f"uploads/{image.name}", file_content)
+            draftArticle.image.save(image.filename, image.file, save=True)
+            draftArticle.image = file_name
         draftArticle.save()
-        return draftArticle
+        return article
 
     @strawberry.mutation
     def publish_article(self, info: Info, slug: str) -> str:

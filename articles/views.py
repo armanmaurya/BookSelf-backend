@@ -15,6 +15,7 @@ from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.authentication import SessionAuthentication
 from articles.models import Article
+from .utils import get_article_from_slug
 
 
 User = CustomUser
@@ -61,23 +62,35 @@ class ArticleView(APIView):
         article.delete()
         return Response(status=status.HTTP_200_OK)
 
-    def patch(self, request):
-        slug = request.query_params.get("slug")
-        if slug is None:
+    def patch(self, request, slug):
+        article = get_article_from_slug(slug)
+        if article is None:
             return Response(
-                {"message": "Article ID not provided"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"message": "Article not found"},
+                status=status.HTTP_404_NOT_FOUND,
             )
-        article = self.get_article(slug)
-        print(request.data)
-        serializer = ArticleSerializer(article, data=request.data, partial=True)
-        if serializer.is_valid():
-            print("valid")
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        if article.author != request.user:
+            return Response(
+                {"message": "You are not the author of this article"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        draft_article = article.draft
+
+        # Uploadd the Image 
+        if request.FILES.get("image"):
+            image = request.FILES["image"]
+            draft_article.image = image
+            draft_article.save()
+            return Response(
+                {"message": "Image uploaded successfully"},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {"message": "No image provided"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     def get(self, request):
         slug = request.query_params.get("slug")

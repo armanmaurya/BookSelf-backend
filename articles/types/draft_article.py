@@ -11,3 +11,7 @@ class ArticleDraftType:
     title: str | None
     content: str | None
     updated_at: Optional[str]
+
+    @strawberry.field
+    def image_url(self, info: Info) -> str:
+        return self.image.url if self.image else ""

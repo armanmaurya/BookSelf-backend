@@ -21,6 +21,7 @@ class CustomUser(AbstractUser):
         max_length=10, choices=REGISTRATION_CHOICES, default="email"
     )
     profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
+    about = models.TextField(_(""), null=True, blank=True)
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 

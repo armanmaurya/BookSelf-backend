@@ -30,6 +30,7 @@ class Article(models.Model):
     status = models.CharField(max_length=2, choices=STATUS_CHOICES, default=DRAFT)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     views = models.PositiveIntegerField(default=0)
+    image = models.ImageField(upload_to="article_images/", null=True, blank=True)
 
     def __str__(self):
         if self.title:
@@ -64,13 +65,16 @@ class Article(models.Model):
     
 
 class ArticleDraft(models.Model):
+    image = models.ImageField(upload_to="article_images/", null=True, blank=True)
     article = models.OneToOneField(Article, on_delete=models.CASCADE, related_name="draft")
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        if self.title:
+            return self.title
+        return "Untitled"
 
 
 class UserArticlesVisitHistory(models.Model):

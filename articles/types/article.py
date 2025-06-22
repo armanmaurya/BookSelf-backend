@@ -72,3 +72,5 @@ class ArticleType:
     @strawberry.field
     def replies_count(self, info: Info, parent: int) -> int:
         return self.comments.filter(parent=parent).count()
+    
+
