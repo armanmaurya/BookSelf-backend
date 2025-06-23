@@ -28,7 +28,8 @@ staticfiles/
 media/
 
 # Environment variables
-.env
+*.env
+test.env
 
 # Secret key
 *.secret_key
