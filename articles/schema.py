@@ -52,11 +52,16 @@ Response = Annotated[
 @strawberry.type
 class Query:
     @strawberry.field
-    def articles(self, info: Info, username: Optional[str] = None) -> List[ArticleType]:
+    def articles(
+        self,
+        info: Info,
+        username: Optional[str] = None,
+        query: Optional[str] = None,
+    ) -> List[ArticleType]:
         # Build the filter dictionary
         filter_dict = {"status": Article.PUBLISHED}
 
-        # If the user is requesting it's own articles, return all the articles
+        # If the user is requesting their own articles, return all the articles
         if (
             info.context.request.user.is_authenticated
             and info.context.request.user.username == username
@@ -65,7 +70,10 @@ class Query:
         if username:
             filter_dict["author__username"] = username
 
-        return Article.objects.filter(**filter_dict)
+        qs = Article.objects.filter(**filter_dict)
+        if query:
+            qs = qs.filter(title__icontains=query) | qs.filter(content__icontains=query)
+        return qs
 
     # TO:DO = Need to fix the only published article can be accesses
     @strawberry.field
@@ -76,16 +84,12 @@ class Query:
 
         # Save the user visit history
         if info.context.request.user.is_authenticated:
-            try:
-                visit = UserArticlesVisitHistory.objects.get(
-                    user=info.context.request.user, article=article
-                )
+            visit, created = UserArticlesVisitHistory.objects.get_or_create(
+                user=info.context.request.user, article=article
+            )
+            if not created:
                 visit.visit_count += 1
                 visit.save()
-            except ObjectDoesNotExist:
-                UserArticlesVisitHistory.objects.create(
-                    user=info.context.request.user, article=article
-                )
 
         # Increment the article views
         article.views += 1
@@ -118,7 +122,8 @@ class Query:
         if not info.context.request.user.is_authenticated:
             return AuthencatationError(message="You must be logged in to view drafts.")
         drafts = ArticleDraft.objects.filter(
-            article__author=info.context.request.user
+            article__author=info.context.request.user,
+            article__status=Article.DRAFT
         ).order_by("-updated_at")
         return DraftArticleList(articles=drafts)  # ✅ Return wrapped list
 
@@ -214,10 +219,10 @@ class Mutation:
     @strawberry.mutation
     def create_comment(
         self, info, article_slug: str, content: str, parent_id: Optional[int] = None
-    ) -> CommentType:
+    ) -> Union[CommentType, AuthencatationError]:
         user = info.context.request.user
         if not user.is_authenticated:
-            raise Exception("You must be logged")
+            return AuthencatationError(message="You must be logged in to comment.")
 
         article = Article.objects.get(slug=article_slug)
         parent = None
