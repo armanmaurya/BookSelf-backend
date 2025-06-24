@@ -28,6 +28,14 @@ class Query:
         if user.is_authenticated:
             return user
         return None
+    
+    @strawberry.field
+    def check_username(self, info: Info, username: str) -> bool:
+        try:
+            CustomUser.objects.get(username=username)
+            return True
+        except CustomUser.DoesNotExist:
+            return False
 
 @strawberry.type
 class Mutation:
