@@ -72,6 +72,26 @@ class Mutation:
         return True
     
     @strawberry.mutation
+    def update_profile(
+        self,
+        info: Info,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        about: Optional[str] = None
+    ) -> SelfUserType:
+        user = info.context.request.user
+        if not user.is_authenticated:
+            raise Exception("Authentication required")
+        if first_name is not None:
+            user.first_name = first_name
+        if last_name is not None:
+            user.last_name = last_name
+        if about is not None:
+            user.about = about
+        user.save()
+        return user
+    
+    @strawberry.mutation
     def update_user(self, info: Info, first_name: Optional[Upload], last_name: Optional[Upload], profile_picture: Optional[Upload]) -> SelfUserType:
         user = info.context.request.user
         user.first_name = first_name

@@ -64,12 +64,20 @@ class FollowView(APIView):
         type = request.query_params.get("type")
         user = get_object_or_404(User, username=username)
         if type == "following":
-            following = Follow.objects.filter(user=user).select_related('following')
-            serializer = UserSerializer([follow.following for follow in following], many=True, context={'request': request})
+            following = Follow.objects.filter(user=user).select_related("following")
+            serializer = UserSerializer(
+                [follow.following for follow in following],
+                many=True,
+                context={"request": request},
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif type == "followers":
-            followers = Follow.objects.filter(following=user).select_related('user')
-            serializer = UserSerializer([follow.user for follow in followers], many=True, context={'request': request})
+            followers = Follow.objects.filter(following=user).select_related("user")
+            serializer = UserSerializer(
+                [follow.user for follow in followers],
+                many=True,
+                context={"request": request},
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response({"error": "Invalid type"}, status=status.HTTP_400_BAD_REQUEST)
@@ -124,7 +132,6 @@ class UserView(APIView):
         code = validated_data.get("code")
         error = validated_data.get("error")
         print("code", code)
-
 
         # redirect_path = validated_data.get("redirect_path")
 
@@ -433,38 +440,43 @@ class VerifyCodeView(APIView):
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 # csrf exempt for profile picture upload
 @csrf_exempt
 def upload_profile_picture(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         user = request.user
         if not user.is_authenticated:
             return JsonResponse({"error": "User not authenticated"}, status=401)
 
-        profile_picture = request.FILES.get('profile')
+        profile_picture = request.FILES.get("profile")
         if not profile_picture:
             return JsonResponse({"error": "No file uploaded"}, status=400)
 
         # Compress the image
         try:
             image = Image.open(profile_picture)
-            image = image.convert('RGB')  # Ensure JPEG compatibility
+            image = image.convert("RGB")  # Ensure JPEG compatibility
             buffer = BytesIO()
-            image.save(buffer, format='JPEG', quality=70)
+            image.save(buffer, format="JPEG", quality=70)
             buffer.seek(0)
             compressed_image = InMemoryUploadedFile(
                 buffer,
-                'ImageField',
-                profile_picture.name.split('.')[0] + '.jpg',
-                'image/jpeg',
+                "ImageField",
+                profile_picture.name.split(".")[0] + ".jpg",
+                "image/jpeg",
                 buffer.getbuffer().nbytes,
-                None
+                None,
             )
             user.profile_picture = compressed_image
         except Exception as e:
-            return JsonResponse({"error": f"Image compression failed: {str(e)}"}, status=400)
+            return JsonResponse(
+                {"error": f"Image compression failed: {str(e)}"}, status=400
+            )
 
         user.save()
-        return JsonResponse({"message": "Profile picture updated successfully"}, status=200)
+        return JsonResponse(
+            {"message": "Profile picture updated successfully"}, status=200
+        )
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
