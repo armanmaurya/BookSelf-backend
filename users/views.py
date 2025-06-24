@@ -5,6 +5,10 @@ from django.shortcuts import redirect
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse
+from io import BytesIO
+from PIL import Image
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from .mixins import PublicApiMixin, ApiErrorsMixin
 from .utils import google_get_access_token, google_get_user_info
@@ -24,6 +28,7 @@ from django.utils import timezone
 import random
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import RegisterAccountTemp, Follow
 
@@ -427,3 +432,39 @@ class VerifyCodeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# csrf exempt for profile picture upload
+@csrf_exempt
+def upload_profile_picture(request):
+    if request.method == 'POST':
+        user = request.user
+        if not user.is_authenticated:
+            return JsonResponse({"error": "User not authenticated"}, status=401)
+
+        profile_picture = request.FILES.get('profile')
+        if not profile_picture:
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+
+        # Compress the image
+        try:
+            image = Image.open(profile_picture)
+            image = image.convert('RGB')  # Ensure JPEG compatibility
+            buffer = BytesIO()
+            image.save(buffer, format='JPEG', quality=70)
+            buffer.seek(0)
+            compressed_image = InMemoryUploadedFile(
+                buffer,
+                'ImageField',
+                profile_picture.name.split('.')[0] + '.jpg',
+                'image/jpeg',
+                buffer.getbuffer().nbytes,
+                None
+            )
+            user.profile_picture = compressed_image
+        except Exception as e:
+            return JsonResponse({"error": f"Image compression failed: {str(e)}"}, status=400)
+
+        user.save()
+        return JsonResponse({"message": "Profile picture updated successfully"}, status=200)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)

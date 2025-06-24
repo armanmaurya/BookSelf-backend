@@ -15,6 +15,7 @@ from users.views import (
     UserView,
     GetProfileFromUserName,
     FollowView,
+    upload_profile_picture
 )
 
 urlpatterns = [
@@ -32,4 +33,5 @@ urlpatterns = [
     path("checkusername/", IsUserNameAvailable.as_view(), name="checkusername"),
     path("getusername/", GetUserName.as_view(), name="getusername"),
     path("profile/<str:username>/", GetProfileFromUserName.as_view()),
+    path("upload-profile-pic/", upload_profile_picture, name="upload_profile_picture"),
 ]
