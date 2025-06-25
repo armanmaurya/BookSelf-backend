@@ -62,6 +62,7 @@ class Mutation:
             info.context.request.session["email"] = user_info.get("email")
             info.context.request.session["first_name"] = first_name
             info.context.request.session["last_name"] = last_name
+            info.context.request.session["registration_method"] = "google"
             info.context.request.session.save()
             googleAuth.is_created = True
             return googleAuth

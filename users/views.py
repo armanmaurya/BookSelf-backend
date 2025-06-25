@@ -346,13 +346,17 @@ class RegisterView(APIView):
             )
         request.data["email"] = email
 
+        # Get the registration method from session
+        registration_method = request.session.get("registration_method")
+        request.data["registration_method"] = registration_method
+
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             login(request, user)  # Log in the user
             request.session.set_expiry(
                 12000000
-            )  # Session expires when the browser is closed
+            )
             # request.session['user_id'] = user.id  # Save user id in session
             request.session.save()
             return Response(
