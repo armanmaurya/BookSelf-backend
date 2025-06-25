@@ -12,7 +12,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from .mixins import PublicApiMixin, ApiErrorsMixin
 from .utils import google_get_access_token, google_get_user_info
-from users.models import CustomUser as User, EmailVerification
+from users.models import CustomUser as User, EmailVerification, RegistrationMethod
 from users.serializers import (
     GoogleAuthInputSerializer,
     RegisterSerializer,
@@ -346,17 +346,19 @@ class RegisterView(APIView):
             )
         request.data["email"] = email
 
-        # Get the registration method from session
+        # Get the registration methods from session
         registration_method = request.session.get("registration_method")
-        request.data["registration_method"] = registration_method
+        method, created = RegistrationMethod.objects.get_or_create(
+            method=registration_method
+        )
+        request.data["first_name"] = request.session.get("first_name", "")
+        request.data["registration_methods"] = [method.id] if method else []
 
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
             login(request, user)  # Log in the user
-            request.session.set_expiry(
-                12000000
-            )
+            request.session.set_expiry(12000000)
             # request.session['user_id'] = user.id  # Save user id in session
             request.session.save()
             return Response(

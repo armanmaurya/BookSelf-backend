@@ -15,9 +15,12 @@ class UserType:
     email: str
     first_name: str
     last_name: str
-    registration_method: str
     about: Optional[str] = None
     # profile_picture: str
+
+    @strawberry.field
+    def registration_methods(self, info: Info) -> List[str]:
+        return [m.method for m in self.registration_methods.all()]
 
     @strawberry.field
     def profile_picture(self, info: Info) -> str:
@@ -84,5 +87,5 @@ class SelfUserType(UserType):
 
         if lastId:
             return UserArticlesVisitHistory.objects.filter(user=user, id__lt=lastId).order_by("-last_visited")[:number]
-        return UserArticlesVisitHistory.objects.filter(user=user).order_by("-last_visited")[:number]        
+        return UserArticlesVisitHistory.objects.filter(user=user).order_by("-last_visited")[:number]
 

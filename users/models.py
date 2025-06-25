@@ -8,18 +8,21 @@ import uuid
 from .managers import CustomUserManager
 
 
-class CustomUser(AbstractUser):
-    username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(_("email address"), unique=True)
-    
-    REGISTRATION_CHOICES = [
+class RegistrationMethod(models.Model):
+    METHOD_CHOICES = [
         ("email", "Email"),
         ("google", "Google"),
     ]
-    
-    registration_method = models.CharField(
-        max_length=10, choices=REGISTRATION_CHOICES, default="email"
-    )
+    method = models.CharField(max_length=10, choices=METHOD_CHOICES, unique=True)
+
+    def __str__(self):
+        return self.method
+
+
+class CustomUser(AbstractUser):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(_("email address"), unique=True)
+    registration_methods = models.ManyToManyField(RegistrationMethod, blank=True)
     profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
     about = models.TextField(_(""), null=True, blank=True)
     USERNAME_FIELD = "username"
@@ -65,4 +68,4 @@ class Follow(models.Model):
 
     def __str__(self):
         return f"{self.user.username} follows {self.following.username}"
-    
+

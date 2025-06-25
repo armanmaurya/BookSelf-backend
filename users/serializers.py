@@ -66,7 +66,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "registration_method",
+            "registration_methods",
         ]
         extra_kwargs = {
             "first_name": {"required": True},
