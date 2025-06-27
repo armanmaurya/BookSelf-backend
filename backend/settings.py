@@ -37,9 +37,9 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_ALLOW_ORIGIN = os.getenv("CSRF_ALLOW_ORIGIN")
 CSRF_TRUSTED_ORIGINS = [
-    "https://bookself.site",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://api.pageekeep.xyz",
 ]
 CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SAMESITE = "None"

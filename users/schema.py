@@ -48,6 +48,9 @@ class Mutation:
         googleAuth = GoogleAuthType(user=None, is_created=False)
         try:
             user = CustomUser.objects.get(email=user_info["email"])
+            # Check if 'google' is in registration_methods
+            if not user.registration_methods.filter(method="google").exists():
+                raise Exception("Google login not enabled for this user.")
             info.context.request.session["user_id"] = user.id
             login(info.context.request, user)
             info.context.request.session.save()
