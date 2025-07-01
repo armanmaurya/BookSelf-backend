@@ -122,8 +122,7 @@ class Query:
         if not info.context.request.user.is_authenticated:
             return AuthencatationError(message="You must be logged in to view drafts.")
         drafts = ArticleDraft.objects.filter(
-            article__author=info.context.request.user,
-            article__status=Article.DRAFT
+            article__author=info.context.request.user, article__status=Article.DRAFT
         ).order_by("-updated_at")
         return DraftArticleList(articles=drafts)  # ✅ Return wrapped list
 
@@ -199,6 +198,28 @@ class Mutation:
             return article.slug
         except:
             return ""
+
+    @strawberry.mutation
+    def toggle_publish_article(self, info: Info, slug: str) -> ArticleType:
+        if not info.context.request.user.is_authenticated:
+            raise Exception("You must be logged")
+
+        article = Article.objects.get(slug=slug)
+
+        # Check if the user is the owner of the article
+        if article.author != info.context.request.user:
+            raise Exception("You Can't update Someone else's article")
+
+        if article.status == Article.PUBLISHED:
+            article.status = Article.DRAFT
+        else:
+            draftArticle = article.draft
+            article.title = draftArticle.title
+            article.content = draftArticle.content
+            article.status = Article.PUBLISHED
+
+        article.save()
+        return article
 
     @strawberry.mutation
     def delete_article(self, info, slug: str) -> bool:
