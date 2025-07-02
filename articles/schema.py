@@ -407,3 +407,23 @@ class Mutation:
             return True
         except ObjectDoesNotExist:
             raise Exception("Collection or Article does not exist")
+        
+    @strawberry.mutation
+    def remove_article_from_collection(
+        self, info, article_slug: str, collection_id: int
+    ) -> bool:
+        if not info.context.request.user.is_authenticated:
+            raise Exception("You must be logged")
+
+        try:
+            collection = Collection.objects.get(id=collection_id)
+            if collection.user != info.context.request.user:
+                raise Exception("You can't modify Someone else's collection")
+            article = Article.objects.get(slug=article_slug)
+            collection_item = CollectionItem.objects.get(
+                collection=collection, article=article
+            )
+            collection_item.delete()
+            return True
+        except ObjectDoesNotExist:
+            raise Exception("Collection or Article does not exist")
