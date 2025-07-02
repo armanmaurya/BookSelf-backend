@@ -11,9 +11,10 @@ class CollectionType:
     description: str
     created_at: str
     updated_at: str
+    is_public: bool
 
     @strawberry.field
-    def items(self, info) -> List["CollectionItemType"]:
+    def retrieve_items(self, info) -> List["CollectionItemType"]:
         return self.items.all()
 
     @strawberry.field

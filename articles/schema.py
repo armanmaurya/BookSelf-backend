@@ -129,6 +129,29 @@ class Query:
     @strawberry.field
     def collection(self, info, id: int) -> CollectionType:
         return Collection.objects.get(id=id)
+    
+    @strawberry.field
+    def collections(
+        self,
+        info: Info,
+        page: int = 1,
+        username: Optional[str] = None,
+    ) -> List[CollectionType]:
+        if not info.context.request.user.is_authenticated:
+            raise Exception("You must be logged in to view collections.")
+
+        if page < 1:
+            raise Exception("Invalid page number. Page number must be greater than 0.")
+
+        filter_dict = {"user": info.context.request.user}
+        if username:
+            filter_dict["user__username"] = username
+
+        page_size = 25
+        start = (page - 1) * page_size
+        end = page * page_size
+
+        return Collection.objects.filter(**filter_dict).order_by("-created_at")[start:end]
 
     # @strawberry.field
     # def collections(self, info,number: int, username: Optional[str] = None, last_id: Optional[str] = None) -> List[CollectionType]:
