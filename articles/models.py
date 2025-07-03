@@ -8,6 +8,7 @@ from taggit.managers import TaggableManager
 from taggit.models import GenericUUIDTaggedItemBase, TaggedItemBase
 from django.utils.text import slugify
 from users.models import CustomUser
+from pgvector.django import VectorField
 
 # Create your models here.
 
@@ -19,6 +20,7 @@ class Article(models.Model):
         (DRAFT, "Draft"),
         (PUBLISHED, "Published"),
     ]
+    embedding = VectorField(dimensions=384, null=True)
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     likes = models.ManyToManyField(CustomUser, related_name="likes", blank=True)

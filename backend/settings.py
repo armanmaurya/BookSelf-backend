@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "pgvector.django",
     "users",
     "api",
     "corsheaders",
