@@ -129,7 +129,7 @@ class Query:
     @strawberry.field
     def collection(self, info, id: int) -> CollectionType:
         return Collection.objects.get(id=id)
-    
+
     @strawberry.field
     def collections(
         self,
@@ -140,15 +140,17 @@ class Query:
         if page < 1:
             raise Exception("Invalid page number. Page number must be greater than 0.")
 
-        filter_dict = {"user": info.context.request.user}
+        filter_dict = {}
         if username:
             filter_dict["user__username"] = username
 
-        page_size = 25
+        page_size = 100
         start = (page - 1) * page_size
         end = page * page_size
 
-        return Collection.objects.filter(**filter_dict).order_by("-created_at")[start:end]
+        return Collection.objects.filter(**filter_dict).order_by("-created_at")[
+            start:end
+        ]
 
     # @strawberry.field
     # def collections(self, info,number: int, username: Optional[str] = None, last_id: Optional[str] = None) -> List[CollectionType]:
@@ -404,7 +406,7 @@ class Mutation:
             return True
         except ObjectDoesNotExist:
             raise Exception("Collection or Article does not exist")
-        
+
     @strawberry.mutation
     def remove_article_from_collection(
         self, info, article_slug: str, collection_id: int
