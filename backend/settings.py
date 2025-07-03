@@ -60,6 +60,10 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 #     "http://127.0.0.1:9000"
 # ]
 
+# ---------------------CELERY Configuration-------------------------------
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# ------------------End of CELERY Configuration--------------------------
+
 ALLOWED_HOSTS = ["*"]
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")

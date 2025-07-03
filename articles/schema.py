@@ -52,6 +52,12 @@ Response = Annotated[
 @strawberry.type
 class Query:
     @strawberry.field
+    def test_celery(self) -> str:
+        from articles.tasks import add
+        add.delay(2, 3)
+        return "Celery task has been sent!"
+
+    @strawberry.field
     def articles(
         self,
         info: Info,
