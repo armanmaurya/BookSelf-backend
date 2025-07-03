@@ -137,9 +137,6 @@ class Query:
         page: int = 1,
         username: Optional[str] = None,
     ) -> List[CollectionType]:
-        if not info.context.request.user.is_authenticated:
-            raise Exception("You must be logged in to view collections.")
-
         if page < 1:
             raise Exception("Invalid page number. Page number must be greater than 0.")
 
