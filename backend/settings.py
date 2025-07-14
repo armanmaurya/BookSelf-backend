@@ -72,7 +72,8 @@ AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 
-MEDIA_URL = f"{AWS_S3_CUSTOM_DOMAIN}/"
+# Media files (uploads) go to S3
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 # Application definition
 
 
@@ -182,7 +183,6 @@ STORAGES = {
         },
     },
     "staticfiles": {
-        # 'BACKEND': 'storages.backends.s3.S3Storage',
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
@@ -213,9 +213,8 @@ EMAIL_USE_SSL = False
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
+STATIC_URL = '/static/'
 
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
