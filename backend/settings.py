@@ -39,7 +39,7 @@ CSRF_ALLOW_ORIGIN = os.getenv("CSRF_ALLOW_ORIGIN")
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://api.pageekeep.xyz",
+    "https://pageekeep.xyz",
 ]
 CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SAMESITE = "None"
@@ -148,6 +148,9 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "OPTIONS": {
+            "sslmode": "require"
+        }
     }
 }
 
@@ -214,6 +217,7 @@ EMAIL_USE_SSL = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 # Default primary key field type

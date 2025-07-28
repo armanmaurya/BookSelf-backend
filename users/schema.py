@@ -67,6 +67,7 @@ class Mutation:
             info.context.request.session["last_name"] = last_name
             info.context.request.session["registration_method"] = "google"
             info.context.request.session.save()
+            print("Creating new user")
             googleAuth.is_created = True
             return googleAuth
         
