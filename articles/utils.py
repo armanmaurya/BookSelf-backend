@@ -98,7 +98,7 @@ def create_sample_cloud_task(payload=None, delay_seconds=0):
             'message': f'Failed to create task: {str(e)}'
         }
 
-def create_embedding_generation_cloud_task(article):
+def create_embedding_generation_cloud_task(article: Article):
     """
     Create a task to generate an embedding for the article.
     
@@ -120,13 +120,15 @@ def create_embedding_generation_cloud_task(article):
     # Construct the fully qualified queue name
     parent = client.queue_path(project_id, location, queue_name)
     
-    # Create ArticleEmbeddingRequest payload
+    # Use the model's method to get properly formatted text for embedding
+    combined_text = article.get_embedding_text()
+    
     payload = {
         'task_type': 'embedding_generation',
         'timestamp': datetime.now().isoformat(),
         'article_embedding_request': {
             'article_id': str(article.id),
-            'text': article.content,
+            'text': combined_text,
             'normalize': True,
             'dimensions': 768
         }

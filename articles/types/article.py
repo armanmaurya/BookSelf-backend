@@ -28,6 +28,10 @@ class ArticleType:
         return self.author.id == currentUser.id
 
     @strawberry.field
+    def related_articles(self, info: Info) -> List["ArticleType"]:
+        return self.related()
+
+    @strawberry.field
     def likes(self, info: Info) -> List[UserType]:
         return self.likes.all()
 
