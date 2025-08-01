@@ -17,6 +17,7 @@ from articles.models import (
 )
 from django.core.exceptions import ObjectDoesNotExist
 from articles.types.draft_article import ArticleDraftType
+from articles.utils import create_embedding_generation_cloud_task
 from graphql import GraphQLError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -184,7 +185,6 @@ class Mutation:
         slug: str,
         title: Optional[str] = None,
         content: Optional[str] = None,
-        image: Optional[Upload] = None,
     ) -> ArticleType:
         if not info.context.request.user.is_authenticated:
             raise Exception("You must be logged")
@@ -193,7 +193,6 @@ class Mutation:
         # Print everything
         print("Title:", title)
         print("Content:", content)
-        print("Image:", image)
         # Check if the user is the owner of the article
         if article.author != info.context.request.user:
             raise Exception("You Can't update Someone else's article")
@@ -201,11 +200,6 @@ class Mutation:
             draftArticle.title = title
         if content:
             draftArticle.content = content
-        if image:
-            file_content = ContentFile(image.read())
-            file_name = default_storage.save(f"uploads/{image.name}", file_content)
-            draftArticle.image.save(image.filename, image.file, save=True)
-            draftArticle.image = file_name
         draftArticle.save()
         return article
 
@@ -222,6 +216,18 @@ class Mutation:
             article.content = draftArticle.content
             article.status = Article.PUBLISHED
             article.save()
+            
+            # Create embedding generation task when article is published
+            try:
+                embedding_result = create_embedding_generation_cloud_task(article)
+                if embedding_result['success']:
+                    print(f"Embedding task created: {embedding_result['task_name']}")
+                else:
+                    print(f"Failed to create embedding task: {embedding_result['error']}")
+            except Exception as e:
+                # Log the error but don't fail the publication
+                print(f"Error creating embedding task: {str(e)}")
+            
             # print(article.slug)
             return article.slug
         except:

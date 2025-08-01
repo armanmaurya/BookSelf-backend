@@ -20,7 +20,7 @@ class Article(models.Model):
         (DRAFT, "Draft"),
         (PUBLISHED, "Published"),
     ]
-    embedding = VectorField(dimensions=384, null=True)
+    embedding = VectorField(dimensions=768, null=True)
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     likes = models.ManyToManyField(CustomUser, related_name="likes", blank=True)

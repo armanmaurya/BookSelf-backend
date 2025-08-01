@@ -15,7 +15,8 @@ from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
 from rest_framework.authentication import SessionAuthentication
 from articles.models import Article
-from .utils import get_article_from_slug
+from .utils import get_article_from_slug, create_sample_cloud_task
+from django.views.decorators.csrf import csrf_exempt
 
 
 User = CustomUser
@@ -199,3 +200,82 @@ def uploadArticle(request):
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@csrf_exempt
+@api_view(["POST"])
+def save_embedding_article(request):
+    if request.method == "POST":
+        article_id = request.data.get("article_id")
+        embedding = request.data.get("embedding")
+        if not article_id or not embedding:
+            return Response(
+                {"error": "Article ID and embedding are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        try:
+            article = Article.objects.get(id=article_id)
+            article.embedding = embedding
+            article.save()
+            return Response({"message": "Embedding saved successfully."}, status=status.HTTP_200_OK)
+        except Article.DoesNotExist:
+            return Response(
+                {"error": "Article not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+    return Response(
+        {"error": "Invalid request method."},
+        status=status.HTTP_405_METHOD_NOT_ALLOWED,
+    )
+
+
+@csrf_exempt
+@api_view(["POST"])
+def test_cloud_task(request):
+    """
+    Test endpoint to create a sample Google Cloud Task.
+    
+    POST /article/test-cloud-task/
+    Body (optional):
+    {
+        "payload": {"custom": "data"},
+        "delay_seconds": 30
+    }
+    """
+    if request.method == "POST":
+        try:
+            # Get optional parameters from request
+            custom_payload = request.data.get("payload")
+            delay_seconds = request.data.get("delay_seconds", 0)
+            
+            # Create the cloud task
+            result = create_sample_cloud_task(
+                payload=custom_payload, 
+                delay_seconds=delay_seconds
+            )
+            
+            if result['success']:
+                return Response({
+                    "success": True,
+                    "message": "Cloud task created successfully!",
+                    "task_name": result['task_name'],
+                    "details": result['message']
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    "success": False,
+                    "message": "Failed to create cloud task",
+                    "error": result['error']
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": "Error creating cloud task",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return Response(
+        {"error": "Invalid request method. Use POST."},
+        status=status.HTTP_405_METHOD_NOT_ALLOWED,
+    )

@@ -149,7 +149,7 @@ DATABASES = {
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
         "OPTIONS": {
-            "sslmode": "require"
+            "sslmode": os.getenv("POSTGRES_SSLMODE", "require")
         }
     }
 }
@@ -212,6 +212,14 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+
+
+# Google Cloud Tasks Configuration
+GOOGLE_CLOUD_PROJECT = os.getenv('GOOGLE_CLOUD_PROJECT')
+CLOUD_TASKS_QUEUE = os.getenv('CLOUD_TASKS_QUEUE')
+CLOUD_TASKS_LOCATION = os.getenv('CLOUD_TASKS_LOCATION')
+TASK_ENDPOINT_URL = os.getenv('TASK_ENDPOINT_URL')
+CLOUD_TASKS_AUTH_TOKEN = os.getenv('CLOUD_TASKS_AUTH_TOKEN')
 
 
 # Static files (CSS, JavaScript, Images)

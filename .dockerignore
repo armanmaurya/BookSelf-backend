@@ -1,0 +1,68 @@
+# Virtual environment
+env/
+venv/
+.env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Local development files
+.env.local
+.env.development
+.env.test
+
+# Database
+*.sqlite3
+*.db
+
+# Static files (if collected locally)
+staticfiles/
+
+# Media files (if stored locally)
+media/
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node modules (if any)
+node_modules/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore

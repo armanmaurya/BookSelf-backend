@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from articles.views import ArticleView, uploadArticle, CheckArticleOwner, MyArticlesView, GetChildrenArticle, LikeArticle
+from articles.views import ArticleView, save_embedding_article, uploadArticle, CheckArticleOwner, MyArticlesView, GetChildrenArticle, LikeArticle, test_cloud_task
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
@@ -10,5 +10,7 @@ urlpatterns = [
    path("upload/", uploadArticle),
    path("checkowner/", CheckArticleOwner.as_view()),
    path("get-children/", GetChildrenArticle.as_view()),
+   path("save-embedding/", save_embedding_article),
+   path("test-cloud-task/", test_cloud_task),
    path("<slug:slug>/", csrf_exempt(ArticleView.as_view())),
 ]
