@@ -36,6 +36,14 @@ class UserType:
     def following_count(self, info: Info) -> int:
         count = Follow.objects.filter(user=self).count()
         return count
+    
+    @strawberry.field
+    def articles_count(self, info: Info) -> int:
+        return Article.objects.filter(author=self, status=Article.PUBLISHED).count()
+    
+    @strawberry.field
+    def collections_count(self, info: Info) -> int:
+        return Collection.objects.filter(user=self).count()
 
     @strawberry.field
     def followers(self, info: Info, number: int , lastId: Optional[int]= None,) -> List["UserType"]:

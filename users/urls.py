@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.decorators.csrf import csrf_exempt
 from users.views import (
     LoginView,
     RegisterView,
@@ -20,7 +21,7 @@ from users.views import (
 
 urlpatterns = [
     path("", UserView.as_view(), name="user"),
-    path("follow/<str:username>/", FollowView.as_view(), name="follow"),
+    path("follow/<str:username>/", csrf_exempt(FollowView.as_view()), name="follow"),
     path("login/", LoginView.as_view(), name="login"),
     path("register/", RegisterView.as_view(), name="register"),
     path("logout/", LogoutView.as_view(), name="logout"),
