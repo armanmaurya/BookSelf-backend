@@ -1,13 +1,15 @@
 from django.conf import settings
 import strawberry
 from users.types.user import UserType, SelfUserType
-from users.models import CustomUser
+from users.models import CustomUser, Follow
 from strawberry.types import Info
 from typing import List, Optional
 from strawberry.file_uploads import Upload
 from .utils import google_get_access_token, google_get_user_info
 from django.contrib.auth import login, logout
 from .types.googleAuth import GoogleAuthType
+from graphql import GraphQLError
+
 
 @strawberry.type
 class Query:
@@ -20,7 +22,7 @@ class Query:
     @strawberry.field
     def user(self, info, username: str) -> UserType:
         return CustomUser.objects.get(username=username)
-    
+
     @strawberry.field
     def me(self, info: Info) -> SelfUserType | None:
         user = info.context.request.user
@@ -28,7 +30,7 @@ class Query:
         if user.is_authenticated:
             return user
         return None
-    
+
     @strawberry.field
     def check_username(self, info: Info, username: str) -> bool:
         try:
@@ -36,6 +38,7 @@ class Query:
             return True
         except CustomUser.DoesNotExist:
             return False
+
 
 @strawberry.type
 class Mutation:
@@ -70,19 +73,43 @@ class Mutation:
             print("Creating new user")
             googleAuth.is_created = True
             return googleAuth
-        
+
+    @strawberry.mutation
+    def follow_user(self, info: Info, username: str) -> bool:
+        user = info.context.request.user
+        if not user.is_authenticated:
+            raise GraphQLError(
+                "You must be logged in", extensions={"code": "UNAUTHENTICATED"}
+            )
+        # Check if the user is trying to follow themselves
+        user_to_follow = CustomUser.objects.get(username=username)
+        if user == user_to_follow:
+            raise GraphQLError(
+                "You can't follow yourself", extensions={"code": "BAD_REQUEST"}
+            )
+
+        # Check if the user is already following the user
+        follow, created = Follow.objects.get_or_create(
+            user=user, following=user_to_follow
+        )
+
+        if not created:
+            follow.delete()
+            return False  # Unfollowed the user
+        return True
+
     @strawberry.mutation
     def logout(self, info: Info) -> bool:
         logout(info.context.request)
         return True
-    
+
     @strawberry.mutation
     def update_profile(
         self,
         info: Info,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
-        about: Optional[str] = None
+        about: Optional[str] = None,
     ) -> SelfUserType:
         user = info.context.request.user
         if not user.is_authenticated:
@@ -95,15 +122,21 @@ class Mutation:
             user.about = about
         user.save()
         return user
-    
+
     @strawberry.mutation
-    def update_user(self, info: Info, first_name: Optional[Upload], last_name: Optional[Upload], profile_picture: Optional[Upload]) -> SelfUserType:
+    def update_user(
+        self,
+        info: Info,
+        first_name: Optional[Upload],
+        last_name: Optional[Upload],
+        profile_picture: Optional[Upload],
+    ) -> SelfUserType:
         user = info.context.request.user
         user.first_name = first_name
         user.last_name = last_name
         user.save()
         return user
-    
+
     @strawberry.mutation
     def delete_user(self, info: Info) -> bool:
         user = info.context.request.user
