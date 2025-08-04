@@ -102,6 +102,9 @@ class Article(models.Model):
 
     def get_likes_count(self):
         return self.likes.count()
+    
+    def get_save_count(self):
+        return CollectionItem.objects.filter(article=self).count()
 
     def generate_unique_slug(self):
         print(self.id)

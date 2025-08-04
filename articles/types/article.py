@@ -38,6 +38,10 @@ class ArticleType:
     @strawberry.field
     def likes_count(self, info: Info) -> int:
         return self.likes.count()
+    
+    @strawberry.field
+    def saves_count(self, info: Info) -> int:
+        return self.get_save_count()
 
     @strawberry.field
     def is_liked(self, info: Info) -> bool:
