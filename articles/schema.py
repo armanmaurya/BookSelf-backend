@@ -190,9 +190,6 @@ class Mutation:
             raise Exception("You must be logged")
         article = Article.objects.get(slug=slug)
         draftArticle = article.draft
-        # Print everything
-        print("Title:", title)
-        print("Content:", content)
         # Check if the user is the owner of the article
         if article.author != info.context.request.user:
             raise Exception("You Can't update Someone else's article")
@@ -321,6 +318,17 @@ class Mutation:
             return True
         except ObjectDoesNotExist:
             return False
+        
+    @strawberry.mutation
+    def pin_comment(self, info, id: int) -> CommentType:
+        if not info.context.request.user.is_authenticated:
+            raise GraphQLError("You must be logged in to pin a comment.")
+
+        comment = ArticleComment.objects.get(id=id)
+        # pin only if article owner is pinning it
+        if comment.article.author == info.context.request.user:
+            comment.pin()
+        return comment
 
     @strawberry.mutation
     def toggle_article_like(self, info, slug: str) -> ArticleType:

@@ -43,36 +43,40 @@ class Article(models.Model):
         """Returns a list of related articles based on embedding cosine similarity, limited to top 20."""
         if self.embedding is None:
             return Article.objects.none()
-        
+
         from pgvector.django import CosineDistance
-        
+
         # Calculate maximum distance for minimum similarity
         # Similarity = (1 - distance), so distance = 1 - similarity
         # max_distance = 1 - min_similarity
-        
-        related_articles = Article.objects.filter(
-            embedding__isnull=False,
-            status=self.PUBLISHED
-        ).exclude(id=self.id).annotate(
-            similarity_score=CosineDistance('embedding', self.embedding)
-        # ).filter(
-        #     similarity_score__lte=max_distance  # Only articles above similarity threshold
-        ).order_by('similarity_score')[:20]
-        
+
+        related_articles = (
+            Article.objects.filter(embedding__isnull=False, status=self.PUBLISHED)
+            .exclude(id=self.id)
+            .annotate(
+                similarity_score=CosineDistance("embedding", self.embedding)
+                # ).filter(
+                #     similarity_score__lte=max_distance  # Only articles above similarity threshold
+            )
+            .order_by("similarity_score")[:20]
+        )
+
         # Print similarity scores for debugging
         print(f"\n=== Related articles for '{self.title}' (ID: {self.id}) ===")
         # print(f"Minimum similarity threshold: {min_similarity*100:.1f}%")
-        
+
         if not related_articles.exists():
             print("No articles found above similarity threshold")
             return related_articles
-            
+
         for article in related_articles:
             similarity_percentage = (1 - article.similarity_score) * 100
-            print(f"- '{article.title}' (ID: {article.id}): {similarity_percentage:.2f}% similar (distance: {article.similarity_score:.4f})")
-        
+            print(
+                f"- '{article.title}' (ID: {article.id}): {similarity_percentage:.2f}% similar (distance: {article.similarity_score:.4f})"
+            )
+
         return related_articles
-    
+
     def get_embedding_text(self):
         """Get the text that should be used for embedding generation."""
         combined_text = ""
@@ -80,12 +84,12 @@ class Article(models.Model):
             combined_text += f"Title: {self.title}\n\n"
         if self.content:
             combined_text += f"Content: {self.content}"
-        
+
         # Include tags if available
-        if hasattr(self, 'tags') and self.tags.exists():
+        if hasattr(self, "tags") and self.tags.exists():
             tags_text = ", ".join([tag.name for tag in self.tags.all()])
             combined_text += f"\n\nTags: {tags_text}"
-        
+
         return combined_text.strip()
 
     def save(self, *args, **kwargs):
@@ -102,7 +106,7 @@ class Article(models.Model):
 
     def get_likes_count(self):
         return self.likes.count()
-    
+
     def get_save_count(self):
         return CollectionItem.objects.filter(article=self).count()
 
@@ -160,9 +164,16 @@ class ArticleComment(models.Model):
     likes = models.ManyToManyField(CustomUser, related_name="comment_likes", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     parent = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True)
+    is_pinned = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} commented on {self.article.title}"
+
+    def pin(self):
+        # Pin only if parent is None
+        if self.is_root_comment():
+            self.is_pinned = True
+            self.save()
 
     def is_root_comment(self):
         return self.parent is None
