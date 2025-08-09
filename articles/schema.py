@@ -320,15 +320,24 @@ class Mutation:
             return False
         
     @strawberry.mutation
-    def pin_comment(self, info, id: int) -> CommentType:
+    def toggle_pin_comment(self, info, id: int) -> bool:
         if not info.context.request.user.is_authenticated:
-            raise GraphQLError("You must be logged in to pin a comment.")
+            raise GraphQLError("You must be logged in to pin or unpin a comment.")
 
-        comment = ArticleComment.objects.get(id=id)
-        # pin only if article owner is pinning it
-        if comment.article.author == info.context.request.user:
-            comment.pin()
-        return comment
+        try:
+            comment = ArticleComment.objects.get(id=id)
+        except ArticleComment.DoesNotExist:
+            raise GraphQLError("Comment does not exist.")
+
+        # Only the article owner can pin/unpin
+        if comment.article.author != info.context.request.user:
+            # Not the owner, so return False (not allowed)
+            raise GraphQLError("You are not allowed to pin or unpin this comment.")
+
+        # toggle is_pinned
+        comment.is_pinned = not comment.is_pinned
+        comment.save()
+        return comment.is_pinned
 
     @strawberry.mutation
     def toggle_article_like(self, info, slug: str) -> ArticleType:

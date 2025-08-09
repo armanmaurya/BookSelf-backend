@@ -11,6 +11,7 @@ class CommentType:
     content: str
     parent: Optional["CommentType"]
     created_at: str
+    is_pinned: bool
 
     @strawberry.field
     def is_liked(self, info: strawberry.Info) -> bool:

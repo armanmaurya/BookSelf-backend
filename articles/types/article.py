@@ -54,20 +54,19 @@ class ArticleType:
     def comments(
         self,
         info: Info,
-        number: int,
+        number: int = 40,
         parentId: Optional[int] = None,
         lastId: Optional[int] = None,
     ) -> List[CommentType]:
         parent_comment = None
         if parentId:
             parent_comment = self.comments.get(id=parentId)
+        qs = self.comments.filter(parent=parent_comment)
         if lastId:
-            return self.comments.filter(id__lt=lastId, parent=parent_comment).order_by(
-                "-created_at"
-            )[:number]
-        return self.comments.filter(parent=parent_comment).order_by("-created_at")[
-            :number
-        ]
+            qs = qs.filter(id__lt=lastId)
+        # Order by is_pinned (desc), then created_at (desc)
+        qs = qs.order_by("-is_pinned", "-created_at")[:number]
+        return qs
 
     @strawberry.field
     def comments_count(self, info: Info) -> int:
