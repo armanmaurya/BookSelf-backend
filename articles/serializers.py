@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from taggit.serializers import TagListSerializerField, TaggitSerializer
-from .models import Article, ArticleComment
+from .models import Article, ArticleComment, ArticleDraft
 from users.serializers import UserSerializer
 
 
@@ -36,6 +36,11 @@ class ArticleSerializer(serializers.ModelSerializer, TaggitSerializer):
     def get_comments(self, obj):
         comments = ArticleComment.objects.filter(article=obj, parent=None)
         return CommentSerializer(comments, many=True).data
+
+class ArticleDraftThumbnailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleDraft
+        fields = ["image"]
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

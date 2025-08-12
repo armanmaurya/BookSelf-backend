@@ -222,27 +222,28 @@ class Mutation:
             if info.context.request.user != article.author:
                 raise Exception("You Can't Publish Other Article")
 
-            draftArticle = article.draft
-
-            article.title = draftArticle.title
-            article.content = draftArticle.content
-            article.status = Article.PUBLISHED
-            article.save()
+            draft_article = article.draft
             
-            # Create embedding generation task when article is published
-            try:
-                embedding_result = create_embedding_generation_cloud_task(article)
-                if embedding_result['success']:
-                    print(f"Embedding task created: {embedding_result['task_name']}")
-                else:
-                    print(f"Failed to create embedding task: {embedding_result['error']}")
-            except Exception as e:
-                # Log the error but don't fail the publication
-                print(f"Error creating embedding task: {str(e)}")
+            # Use the new publish method which returns if embedding is needed
+            needs_embedding = draft_article.publish()
             
-            # print(article.slug)
+            # Create embedding generation task only if title or content changed
+            if needs_embedding:
+                try:
+                    embedding_result = create_embedding_generation_cloud_task(article)
+                    if embedding_result['success']:
+                        print(f"Embedding task created: {embedding_result['task_name']}")
+                    else:
+                        print(f"Failed to create embedding task: {embedding_result['error']}")
+                except Exception as e:
+                    # Log the error but don't fail the publication
+                    print(f"Error creating embedding task: {str(e)}")
+            else:
+                print("No embedding generation needed - title and content unchanged")
+            
             return article.slug
-        except:
+        except Exception as e:
+            print(f"Error publishing article: {str(e)}")
             return ""
 
     @strawberry.mutation
@@ -258,13 +259,23 @@ class Mutation:
 
         if article.status == Article.PUBLISHED:
             article.status = Article.DRAFT
+            article.save()
         else:
-            draftArticle = article.draft
-            article.title = draftArticle.title
-            article.content = draftArticle.content
-            article.status = Article.PUBLISHED
+            # Use the new publish method
+            draft_article = article.draft
+            needs_embedding = draft_article.publish()
+            
+            # Generate embedding if content changed
+            if needs_embedding:
+                try:
+                    embedding_result = create_embedding_generation_cloud_task(article)
+                    if embedding_result['success']:
+                        print(f"Embedding task created: {embedding_result['task_name']}")
+                    else:
+                        print(f"Failed to create embedding task: {embedding_result['error']}")
+                except Exception as e:
+                    print(f"Error creating embedding task: {str(e)}")
 
-        article.save()
         return article
 
     @strawberry.mutation

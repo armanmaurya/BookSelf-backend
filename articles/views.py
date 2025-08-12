@@ -1,4 +1,5 @@
 from django.forms import ValidationError
+from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,7 +10,7 @@ from users.models import CustomUser
 from users.serializers import UserSerializer
 
 from articles.models import Article, UserArticlesVisitHistory
-from .serializers import ArticleUploadSerializer, ArticleSerializer
+from .serializers import ArticleUploadSerializer, ArticleSerializer, ArticleDraftThumbnailSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
@@ -191,6 +192,53 @@ class CheckArticleBelongsToUser(APIView):
             return Response({"message": "Article belongs to user"})
         return Response({"message": "Article does not belong to user"})
 
+@csrf_exempt
+def manageArticleThumbnail(request, slug):
+    # Check if the request method is valid
+    if request.method not in ["POST", "DELETE"]:
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"error": "User not authenticated"}, status=401)
+
+    # Get article by slug
+    article = get_article_from_slug(slug)
+    if article is None:
+        return JsonResponse({"error": "Article not found"}, status=404)
+
+    # Validate that the article belongs to the user
+    if article.author != user:
+        return JsonResponse({"error": "You are not the author of this article"}, status=403)
+
+    # Get the draft
+    draft = article.draft
+
+    if request.method == "POST":
+        # Check if image is provided
+        if not request.FILES.get("image"):
+            return JsonResponse({"error": "No image provided"}, status=400)
+
+        # Update the draft with the new image
+        draft.image = request.FILES["image"]
+        draft.save()  # This will trigger compress_image method
+        
+        return JsonResponse({
+            "message": "Thumbnail uploaded successfully",
+            "image_url": draft.image.url if draft.image else None
+        }, status=200)
+    
+    elif request.method == "DELETE":
+        # Delete the thumbnail
+        if draft.image:
+            draft.image.delete(save=False)  # Delete file from storage
+            draft.image = None
+            draft.save()
+            return JsonResponse({"message": "Thumbnail deleted successfully"}, status=200)
+        else:
+            return JsonResponse({"error": "No thumbnail to delete"}, status=400)
+    
+    return JsonResponse({"error": "Invalid request method."}, status=405)
 
 @api_view(["POST"])
 def uploadArticle(request):

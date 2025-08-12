@@ -21,6 +21,12 @@ class ArticleType:
     status: str
 
     @strawberry.field
+    def thumbnail(self, info: Info) -> str:
+        if self.thumbnail:
+            return self.thumbnail.url
+        return ""
+
+    @strawberry.field
     def is_self(self, info: Info) -> bool:
         currentUser = info.context.request.user
         if currentUser.is_anonymous:
