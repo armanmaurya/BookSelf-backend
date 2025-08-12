@@ -3,7 +3,10 @@ from typing import Collection, List, Optional, Union, Annotated
 from strawberry.exceptions import StrawberryGraphQLError
 from strawberry.types import Info
 from strawberry.file_uploads import Upload
+import strawberry
+from enum import Enum
 
+from articles.enums import ArticleSortBy
 from articles.types.article_comments import CommentType
 from articles.types.collection import CollectionType
 from .types.article import ArticleType
@@ -21,6 +24,7 @@ from articles.utils import create_embedding_generation_cloud_task
 from graphql import GraphQLError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+
 
 
 @strawberry.type
@@ -64,6 +68,7 @@ class Query:
         info: Info,
         username: Optional[str] = None,
         query: Optional[str] = None,
+        sort_by: Optional[ArticleSortBy] = None
     ) -> List[ArticleType]:
         # Build the filter dictionary
         filter_dict = {"status": Article.PUBLISHED}
@@ -80,6 +85,16 @@ class Query:
         qs = Article.objects.filter(**filter_dict)
         if query:
             qs = qs.filter(title__icontains=query) | qs.filter(content__icontains=query)
+        
+        # Apply sorting based on sort_by parameter
+        if sort_by == ArticleSortBy.POPULAR:
+            qs = qs.order_by("-views", "-created_at")  # Most views first, then latest
+        elif sort_by == ArticleSortBy.LATEST:
+            qs = qs.order_by("-created_at")  # Most recent first
+        else:
+            # Default sorting (latest)
+            qs = qs.order_by("-created_at")
+        
         return qs
 
     # TO:DO = Need to fix the only published article can be accesses

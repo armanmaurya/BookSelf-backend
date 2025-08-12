@@ -127,9 +127,8 @@ class Mutation:
     def update_user(
         self,
         info: Info,
-        first_name: Optional[Upload],
-        last_name: Optional[Upload],
-        profile_picture: Optional[Upload],
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
     ) -> SelfUserType:
         user = info.context.request.user
         user.first_name = first_name

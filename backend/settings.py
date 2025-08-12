@@ -40,7 +40,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://pageekeep.xyz",
-    "https://infobite.online"
+    "https://infobite.online",
 ]
 CSRF_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SAMESITE = "None"
@@ -62,7 +62,7 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 # ]
 
 # ---------------------CELERY Configuration-------------------------------
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = "redis://localhost:6379/0"
 # ------------------End of CELERY Configuration--------------------------
 
 ALLOWED_HOSTS = ["*"]
@@ -71,10 +71,12 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
-AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL")
+MEDIA_ENDPOINT_URL = os.getenv("MEDIA_ENDPOINT_URL")
+
 
 # Media files (uploads) go to S3
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
 # Application definition
 
 
@@ -149,9 +151,7 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
-        "OPTIONS": {
-            "sslmode": os.getenv("POSTGRES_SSLMODE", "require")
-        }
+        "OPTIONS": {"sslmode": os.getenv("POSTGRES_SSLMODE", "require")},
     }
 }
 
@@ -182,8 +182,9 @@ STORAGES = {
             "secret_key": AWS_SECRET_ACCESS_KEY,
             "bucket_name": AWS_STORAGE_BUCKET_NAME,
             "region_name": AWS_S3_REGION_NAME,
-            # 'default_acl': 'public-read',
-            "custom_domain": AWS_S3_CUSTOM_DOMAIN,
+            "default_acl": "public-read",
+            "custom_domain": MEDIA_ENDPOINT_URL,
+            "endpoint_url": AWS_S3_ENDPOINT_URL,
         },
     },
     "staticfiles": {
@@ -216,17 +217,17 @@ EMAIL_USE_SSL = False
 
 
 # Google Cloud Tasks Configuration
-GOOGLE_CLOUD_PROJECT = os.getenv('GOOGLE_CLOUD_PROJECT')
-CLOUD_TASKS_QUEUE = os.getenv('CLOUD_TASKS_QUEUE')
-CLOUD_TASKS_LOCATION = os.getenv('CLOUD_TASKS_LOCATION')
-TASK_ENDPOINT_URL = os.getenv('TASK_ENDPOINT_URL')
-CLOUD_TASKS_AUTH_TOKEN = os.getenv('CLOUD_TASKS_AUTH_TOKEN')
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
+CLOUD_TASKS_QUEUE = os.getenv("CLOUD_TASKS_QUEUE")
+CLOUD_TASKS_LOCATION = os.getenv("CLOUD_TASKS_LOCATION")
+TASK_ENDPOINT_URL = os.getenv("TASK_ENDPOINT_URL")
+CLOUD_TASKS_AUTH_TOKEN = os.getenv("CLOUD_TASKS_AUTH_TOKEN")
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 
 # Default primary key field type

@@ -1,5 +1,6 @@
 import strawberry
 import strawberry_django
+from articles.enums import ArticleSortBy
 from users.models import CustomUser, Follow
 from typing import List, Optional
 from strawberry import LazyType
@@ -16,7 +17,6 @@ class UserType:
     first_name: str
     last_name: str
     about: Optional[str] = None
-    # profile_picture: str
 
     @strawberry.field
     def registration_methods(self, info: Info) -> List[str]:
@@ -76,8 +76,17 @@ class UserType:
         return self.username == info.context.request.user.username
     
     @strawberry.field
-    def articles(self, info: Info) -> List[LazyType["ArticleType", "articles.types.article"]]: # type: ignore
-        return Article.objects.filter(author=self, status=Article.PUBLISHED)
+    def articles(
+        self,
+        info: Info,
+        sort_by: Optional[ArticleSortBy] = None
+    ) -> List[LazyType["ArticleType", "articles.types.article"]]: # type: ignore
+        qs = Article.objects.filter(author=self, status=Article.PUBLISHED)
+        if sort_by == ArticleSortBy.POPULAR:
+            qs = qs.order_by("-views", "-created_at")
+        else:  # Default and 'recent'
+            qs = qs.order_by("-created_at")
+        return qs
     @strawberry.field
     def collections(self, info: Info, number: int,  last_id: Optional[int] = None) -> List[LazyType["CollectionType", "articles.types.collection"]]: # type: ignore
         if last_id:
