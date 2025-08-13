@@ -26,12 +26,19 @@ class Notebook(models.Model):
         return None
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
-        isExist = Notebook.objects.filter(slug=self.slug, user=self.user).exists()
-
-        if isExist:
-            raise Notebook.AlreadyExist("Notebook with this name already exists")
-        super(Notebook, self).save(*args, **kwargs)
+        if not self.id:
+            super().save(*args, **kwargs)
+        self.slug = self.generate_unique_slug()
+        super().save(*args, **kwargs)
+    
+    def generate_unique_slug(self):
+        slug = ""
+        if self.name:
+            base_slug = slugify(self.name)
+            slug = f"{base_slug}-{self.id}"
+        else:
+            slug = str(self.id)
+        return slug
 
     def __str__(self):
         return self.name
