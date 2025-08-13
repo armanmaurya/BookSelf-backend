@@ -27,7 +27,6 @@ class Article(models.Model):
     embedding = VectorField(dimensions=768, null=True)
     title = models.CharField(max_length=100, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
-    likes = models.ManyToManyField(CustomUser, related_name="likes", blank=True)
     tags = TaggableManager()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -101,17 +100,26 @@ class Article(models.Model):
         self.slug = self.generate_unique_slug()
         super().save()
 
+    def toggleLike(self, user):
+        if ArticleLike.objects.filter(article=self, user=user).exists():
+            self.unlike(user)
+        else:
+            self.like(user)
+
     def like(self, user):
-        self.likes.add(user)
+        ArticleLike.objects.get_or_create(article=self, user=user)
 
     def unlike(self, user):
-        self.likes.remove(user)
+        ArticleLike.objects.filter(article=self, user=user).delete()
 
     def get_likes_count(self):
-        return self.likes.count()
+        return ArticleLike.objects.filter(article=self).count()
 
     def get_save_count(self):
         return CollectionItem.objects.filter(article=self).count()
+
+    def isLiked(self, user):
+        return ArticleLike.objects.filter(article=self, user=user).exists()
 
     def generate_unique_slug(self):
         print(self.id)
@@ -123,6 +131,16 @@ class Article(models.Model):
             slug = str(self.id)
 
         return slug
+    
+
+class ArticleLike(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="article_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        unique_together = ("article", "user")
 
 
 class ArticleDraft(models.Model):

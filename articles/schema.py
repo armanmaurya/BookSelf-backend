@@ -371,10 +371,7 @@ class Mutation:
             raise Exception("You must be logged")
 
         article = Article.objects.get(slug=slug)
-        if article.likes.filter(id=info.context.request.user.id).exists():
-            article.likes.remove(info.context.request.user)
-        else:
-            article.likes.add(info.context.request.user)
+        article.toggleLike(info.context.request.user)
         return article
 
     @strawberry.mutation

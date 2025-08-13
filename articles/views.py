@@ -139,11 +139,8 @@ class LikeArticle(APIView):
     def get(self, request):
         slug = request.query_params.get("slug")
         article = Article.objects.get(slug=slug)
-        if request.user in article.likes.all():
-            article.likes.remove(request.user)
-            return Response({"message": "Unliked"})
-        article.likes.add(request.user)
-        return Response({"message": "Liked"})
+        article.toggleLike(request.user)
+        return Response({"message": "Toggled like"})
 
 
 class CheckArticleOwner(APIView):

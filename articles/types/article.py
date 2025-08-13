@@ -39,13 +39,9 @@ class ArticleType:
         return self.related()
 
     @strawberry.field
-    def likes(self, info: Info) -> List[UserType]:
-        return self.likes.all()
-
-    @strawberry.field
     def likes_count(self, info: Info) -> int:
-        return self.likes.count()
-    
+        return self.get_likes_count()
+
     @strawberry.field
     def saves_count(self, info: Info) -> int:
         return self.get_save_count()
@@ -55,7 +51,7 @@ class ArticleType:
         currentUser = info.context.request.user
         if currentUser.is_anonymous:
             return False
-        return self.likes.filter(id=currentUser.id).exists()
+        return self.isLiked(currentUser)
 
     @strawberry.field
     def comments(
@@ -78,7 +74,7 @@ class ArticleType:
     @strawberry.field
     def comments_count(self, info: Info) -> int:
         return self.comments.filter(parent=None).count()
-    
+
     @strawberry.field
     def total_comments_count(self, info: Info) -> int:
         return self.comments.count()
@@ -86,5 +82,3 @@ class ArticleType:
     @strawberry.field
     def replies_count(self, info: Info, parent: int) -> int:
         return self.comments.filter(parent=parent).count()
-    
-
