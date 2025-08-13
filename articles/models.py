@@ -188,17 +188,29 @@ class ArticleDraft(models.Model):
         if content_changed:
             article.content = self.content
         
-        # Only copy image if it's different
+        # Handle image changes - copy, replace, or remove
         image_changed = False
         if self.image and not article.thumbnail:
             # If draft has image but article doesn't, copy it
             article.thumbnail = self.image
             image_changed = True
         elif self.image and article.thumbnail and str(self.image) != str(article.thumbnail):
-            # If both have images but they're different, replace article's image with draft's image
+            # If both have images but they're different, delete old image and replace with draft's image
+            old_thumbnail = article.thumbnail
             article.thumbnail = self.image
+            # Delete the old image file from storage
+            if old_thumbnail:
+                old_thumbnail.delete(save=False)
             image_changed = True
-        # If draft has no image, keep article's existing image (don't change)
+        elif not self.image and article.thumbnail:
+            # If draft has no image but article has one, remove article's image
+            old_thumbnail = article.thumbnail
+            article.thumbnail = None
+            # Delete the old image file from storage
+            if old_thumbnail:
+                old_thumbnail.delete(save=False)
+            image_changed = True
+        # If both have no image, no change needed
         
         # Set status to published
         article.status = Article.PUBLISHED

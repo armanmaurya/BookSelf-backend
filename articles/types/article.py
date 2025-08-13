@@ -17,6 +17,7 @@ class ArticleType:
     content: str | None
     views: int
     created_at: str
+    updated_at: str
     author: UserType
     status: str
 
