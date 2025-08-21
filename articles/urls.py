@@ -1,6 +1,5 @@
-from django.contrib import admin
-from django.urls import path, include
-from articles.views import ArticleView, save_embedding_article, uploadArticle, CheckArticleOwner, MyArticlesView, GetChildrenArticle, LikeArticle, manageArticleThumbnail
+from django.urls import path
+from articles.views import ArticleView, manage_image_attachments, save_embedding_article, uploadArticle, CheckArticleOwner, MyArticlesView, GetChildrenArticle, LikeArticle, manageArticleThumbnail
 from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
@@ -13,5 +12,5 @@ urlpatterns = [
    path("save-embedding/", save_embedding_article),
    path("<slug:slug>/thumbnail/", manageArticleThumbnail),
    path("<slug:slug>/", csrf_exempt(ArticleView.as_view())),
-
+   path("<slug:slug>/images/", manage_image_attachments),
 ]

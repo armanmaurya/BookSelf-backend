@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from taggit.serializers import TagListSerializerField, TaggitSerializer
-from .models import Article, ArticleComment, ArticleDraft
+from .models import Article, ArticleComment, ArticleDraft, ImageAttachment
 from users.serializers import UserSerializer
 
 
@@ -45,4 +45,9 @@ class ArticleDraftThumbnailSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArticleComment
+        fields = "__all__"
+
+class ImageAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImageAttachment
         fields = "__all__"

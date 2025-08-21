@@ -241,6 +241,15 @@ class ArticleDraft(models.Model):
         if self.title:
             return self.title
         return "Untitled"
+    
+
+class ImageAttachment(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="image_attachments")
+    image = models.ImageField(upload_to="attachments/")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.article.title}"
 
 
 class UserArticlesVisitHistory(models.Model):

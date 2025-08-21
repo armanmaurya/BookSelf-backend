@@ -9,8 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from users.models import CustomUser
 from users.serializers import UserSerializer
 
-from articles.models import Article, UserArticlesVisitHistory
-from .serializers import ArticleUploadSerializer, ArticleSerializer, ArticleDraftThumbnailSerializer
+from articles.models import Article, ImageAttachment, UserArticlesVisitHistory
+from .serializers import ArticleUploadSerializer, ArticleSerializer, ArticleDraftThumbnailSerializer, ImageAttachmentSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.decorators import api_view
@@ -188,6 +188,58 @@ class CheckArticleBelongsToUser(APIView):
         if article.author == request.user:
             return Response({"message": "Article belongs to user"})
         return Response({"message": "Article does not belong to user"})
+
+@csrf_exempt
+def manage_image_attachments(request, slug):
+    # Check authentication
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "User not authenticated"}, status=401)
+
+    article = get_article_from_slug(slug)
+    if article is None:
+        return JsonResponse({"error": "Article not found"}, status=404)
+
+    if article.author != request.user:
+        return JsonResponse({"error": "You are not the author of this article"}, status=403)
+
+    if request.method == "GET":
+        images = ImageAttachment.objects.filter(article=article)
+        serializer = ImageAttachmentSerializer(images, many=True)
+        return JsonResponse({"images": serializer.data}, status=200)
+
+    elif request.method == "POST":
+        # Check if image is provided
+        if not request.FILES.get("image"):
+            return JsonResponse({"error": "No image provided"}, status=400)
+
+        # Create the image attachment
+        image_attachment = ImageAttachment.objects.create(
+            article=article,
+            image=request.FILES["image"]
+        )
+        
+        # Return the image URL for the frontend
+        return JsonResponse({
+            "message": "Image uploaded successfully",
+            "image_url": image_attachment.image.url,
+            "id": image_attachment.id
+        }, status=200)
+
+    elif request.method == "DELETE":
+        image_id = request.data.get("image_id")
+        if not image_id:
+            return JsonResponse({"error": "Image ID is required"}, status=400)
+        try:
+            image_attachment = ImageAttachment.objects.get(id=image_id, article=article)
+            # Delete the file from storage
+            if image_attachment.image:
+                image_attachment.image.delete(save=False)
+            image_attachment.delete()
+            return JsonResponse({"message": "Image deleted successfully"}, status=200)
+        except ImageAttachment.DoesNotExist:
+            return JsonResponse({"error": "Image not found"}, status=404)
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
 
 @csrf_exempt
 def manageArticleThumbnail(request, slug):
