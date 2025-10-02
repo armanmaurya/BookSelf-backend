@@ -3,6 +3,8 @@ import strawberry
 import strawberry_django
 from articles.models import Collection, CollectionItem
 from articles.types.article import ArticleType
+from typing import List, Optional
+from strawberry import LazyType
 
 @strawberry_django.type(Collection)
 class CollectionType:
@@ -31,6 +33,15 @@ class CollectionType:
     @strawberry.field
     def items_count(self) -> int:
         return self.items.count()
+
+    @strawberry.field
+    def index_article(self, info) -> Optional[ArticleType]:
+        """Return the first article in the collection"""
+        first_item = self.items.first()
+        if first_item:
+            return first_item.article
+        return None
+
 
 
 @strawberry_django.type(CollectionItem)

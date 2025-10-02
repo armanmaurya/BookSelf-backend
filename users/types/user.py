@@ -92,6 +92,11 @@ class UserType:
         if last_id:
            return Collection.objects.filter(user=self, id__lt=last_id).order_by("-created_at")[:number]
         return Collection.objects.filter(user=self).order_by("-created_at")[:number]
+    
+    @strawberry.field
+    def notebooks(self, info: Info) -> List[LazyType["NotebookType", "notebook.types.notebook"]]: # type: ignore
+        from notebook.models import Notebook
+        return list(Notebook.objects.filter(user=self).order_by("-created_at"))
         
 
 @strawberry.type
