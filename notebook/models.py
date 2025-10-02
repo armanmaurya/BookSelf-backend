@@ -6,11 +6,7 @@ from users.models import CustomUser
 
 
 class Notebook(models.Model):
-    class AlreadyExist(Exception):
-        """Exception raised when a notebook already exists."""
-        pass
-
-    slug = models.SlugField(max_length=100)  # Unique identifier
+    slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)  # Unique identifier
     name = models.CharField(max_length=100)  # Notebook name
     overview = models.TextField(blank=True, null=True)  # Optional description
     created_at = models.DateTimeField(auto_now_add=True)
@@ -18,20 +14,76 @@ class Notebook(models.Model):
     cover = models.ImageField(upload_to='notebook_covers/', blank=True, null=True)
 
     def get_index_page(self):
-        from page.models import Page
-
-        root_page: Page | any = self.pages.filter(parent=None).first()
+        root_page = self.pages.filter(parent=None).first()
         if root_page:
             return root_page
         return None
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
-        isExist = Notebook.objects.filter(slug=self.slug, user=self.user).exists()
-
-        if isExist:
-            raise Notebook.AlreadyExist("Notebook with this name already exists")
-        super(Notebook, self).save(*args, **kwargs)
+        # Only generate slug if this is an update to an existing object with ID
+        if self.pk:
+            self.slug = self.generate_unique_slug()
+        
+        # Call the parent save method
+        super().save(*args, **kwargs)
+        
+        # Generate slug after first save if this was a new object
+        if not self.slug:
+            self.slug = self.generate_unique_slug()
+            super().save(update_fields=['slug'])
+    
+    def generate_unique_slug(self):
+        slug = ""
+        if self.name:
+            base_slug = slugify(self.name)
+            slug = f"{base_slug}-{self.id}"
+        else:
+            slug = str(self.id)
+        return slug
 
     def __str__(self):
         return self.name
+
+
+class Page(models.Model):
+    slug = models.SlugField(max_length=255)
+    title = models.CharField(max_length=255)
+    content = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notebook = models.ForeignKey(Notebook, on_delete=models.CASCADE, related_name="pages")
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="children")
+    index = models.PositiveIntegerField(default=0)
+    has_children = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['index']
+    
+    def save(self, *args, **kwargs):
+        if self.pk is None and self.parent is not None:
+            self.parent.has_children = True
+            self.parent.save()
+        if self.pk is None and self.index == 0:  # Check if it's a new object
+            sibling_pages = Page.objects.filter(
+                notebook=self.notebook, parent=self.parent
+            )
+            self.index = sibling_pages.count() + 1  # Make it the last page
+        if self.pk:
+            original = Page.objects.get(pk=self.pk)
+            if original.title != self.title:
+                self.slug = slugify(self.title)
+        else:
+            self.slug = slugify(self.title)
+            if Page.objects.filter(slug=self.slug, parent = self.parent).exists():
+                raise ValueError("A page with this slug already exists.")
+        super(Page, self).save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        parent = self.parent
+        super(Page, self).delete(*args, **kwargs)
+        if parent:
+            parent.has_children = parent.children.exists()
+            parent.save(update_fields=['has_children'])
+    
+    def __str__(self):
+        return self.title

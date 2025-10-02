@@ -1,19 +1,28 @@
 from rest_framework.views import APIView
 from rest_framework.authentication import SessionAuthentication
 
-from page.serializers import PageCreateFormSerializer
-from .serializers import NotebookFormSerializer, NotebookGetSerializer
+from .serializers import NotebookFormSerializer, NotebookGetSerializer, PageCreateFormSerializer, PageSerializer, PageUpdateFormSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .models import Notebook
-from page.models import Page
-from page.views import getNotebookPage
-from page.serializers import PageSerializer, PageUpdateFormSerializer
+from .models import Notebook, Page
 
 from users.models import CustomUser as User
 from django.views.decorators.csrf import csrf_exempt
+
+
+def getNotebookPage(notebook, page_path):
+    if page_path is None:
+        return None
+    path = page_path.split("/")
+    print(path)
+    page = None
+    for p in path:
+        if (p == ""):
+            continue
+        page = Page.objects.get(notebook=notebook, parent=page, slug=p)
+    return page
 
 
 class NoteBookPageView(APIView):
