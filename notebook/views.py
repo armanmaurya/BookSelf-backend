@@ -1,15 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.authentication import SessionAuthentication
 
-from .serializers import NotebookFormSerializer, NotebookGetSerializer, PageCreateFormSerializer, PageSerializer, PageUpdateFormSerializer
+from .serializers import NotebookFormSerializer, NotebookGetSerializer, PageCreateFormSerializer, PageSerializer, PageUpdateFormSerializer, NotebookCoverSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import Notebook, Page
+from .utils import get_notebook_from_slug
 
 from users.models import CustomUser as User
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
 
 
 def getNotebookPage(notebook, page_path):
@@ -371,4 +373,49 @@ class NoteBookView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
                 data={"error": "Notebook not found"},
             )
-        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@csrf_exempt
+def manageNotebookCover(request, slug):
+    # Check if the request method is valid
+    if request.method not in ["POST", "DELETE"]:
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
+    user = request.user
+    if not user.is_authenticated:
+        return JsonResponse({"error": "User not authenticated"}, status=401)
+
+    # Get notebook by slug
+    notebook = get_notebook_from_slug(slug)
+    if notebook is None:
+        return JsonResponse({"error": "Notebook not found"}, status=404)
+
+    # Validate that the notebook belongs to the user
+    if notebook.user != user:
+        return JsonResponse({"error": "You are not the owner of this notebook"}, status=403)
+
+    if request.method == "POST":
+        # Check if image is provided
+        if not request.FILES.get("image"):
+            return JsonResponse({"error": "No cover image provided"}, status=400)
+
+        # Update the notebook with the new cover
+        notebook.cover = request.FILES["image"]
+        notebook.save()
+        
+        return JsonResponse({
+            "message": "Cover uploaded successfully",
+            "cover_url": notebook.cover.url if notebook.cover else None
+        }, status=200)
+    
+    elif request.method == "DELETE":
+        # Delete the cover
+        if notebook.cover:
+            notebook.cover.delete(save=False)  # Delete file from storage
+            notebook.cover = None
+            notebook.save()
+            return JsonResponse({"message": "Cover deleted successfully"}, status=200)
+        else:
+            return JsonResponse({"error": "No cover to delete"}, status=400)
+    
+    return JsonResponse({"error": "Invalid request method."}, status=405)

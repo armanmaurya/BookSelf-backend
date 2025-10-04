@@ -58,16 +58,62 @@ class Page(models.Model):
 
     class Meta:
         ordering = ['index']
+        unique_together = [['notebook', 'parent', 'index']]  # Ensure unique index within same parent
+    
+    def get_next_index(self):
+        """Get the next available index for this page's siblings"""
+        siblings = Page.objects.filter(notebook=self.notebook, parent=self.parent)
+        if self.pk:
+            siblings = siblings.exclude(pk=self.pk)
+        
+        max_index = siblings.aggregate(models.Max('index'))['index__max']
+        return (max_index or 0) + 1
+    
+    def reorder_after(self, target_page_id=None):
+        """Reorder this page to come after the target page, or at the beginning if target_page_id is None"""
+        if target_page_id:
+            try:
+                target_page = Page.objects.get(id=target_page_id, notebook=self.notebook, parent=self.parent)
+                new_index = target_page.index + 1
+            except Page.DoesNotExist:
+                raise ValueError("Target page not found in the same parent")
+        else:
+            new_index = 1
+        
+        # Shift existing pages to make room
+        Page.objects.filter(
+            notebook=self.notebook,
+            parent=self.parent,
+            index__gte=new_index
+        ).exclude(id=self.id).update(index=models.F('index') + 1)
+        
+        self.index = new_index
+        self.save()
+    
+    def reorder_before(self, target_page_id):
+        """Reorder this page to come before the target page"""
+        try:
+            target_page = Page.objects.get(id=target_page_id, notebook=self.notebook, parent=self.parent)
+            new_index = target_page.index
+        except Page.DoesNotExist:
+            raise ValueError("Target page not found in the same parent")
+        
+        # Shift existing pages to make room
+        Page.objects.filter(
+            notebook=self.notebook,
+            parent=self.parent,
+            index__gte=new_index
+        ).exclude(id=self.id).update(index=models.F('index') + 1)
+        
+        self.index = new_index
+        self.save()
     
     def save(self, *args, **kwargs):
         if self.pk is None and self.parent is not None:
             self.parent.has_children = True
             self.parent.save()
         if self.pk is None and self.index == 0:  # Check if it's a new object
-            sibling_pages = Page.objects.filter(
-                notebook=self.notebook, parent=self.parent
-            )
-            self.index = sibling_pages.count() + 1  # Make it the last page
+            self.index = self.get_next_index()
         if self.pk:
             original = Page.objects.get(pk=self.pk)
             if original.title != self.title:

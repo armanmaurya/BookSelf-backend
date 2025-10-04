@@ -46,6 +46,7 @@ class NotebookQuery:
         query: Optional[str] = None,
         sort_by: Optional[NotebookSortBy] = None,
         limit: int = 20,
+        last_id: Optional[int] = None,
     ) -> List[NotebookType]:
         """Get notebooks with optional filtering and sorting"""
         filter_dict = {}
@@ -63,6 +64,10 @@ class NotebookQuery:
             # User can see all their own notebooks
             pass
         
+        # Add pagination filter
+        if last_id:
+            filter_dict["id__lt"] = last_id
+        
         qs = Notebook.objects.select_related('user').filter(**filter_dict)
         
         # Apply search query
@@ -72,14 +77,14 @@ class NotebookQuery:
         
         # Apply sorting
         if sort_by == NotebookSortBy.LATEST:
-            qs = qs.order_by("-created_at")
+            qs = qs.order_by("-created_at", "-id")  # Add id for consistent ordering
         elif sort_by == NotebookSortBy.OLDEST:
-            qs = qs.order_by("created_at")
+            qs = qs.order_by("created_at", "id")
         elif sort_by == NotebookSortBy.NAME:
-            qs = qs.order_by("name")
+            qs = qs.order_by("name", "-id")  # Add id as secondary sort
         else:
             # Default sorting (latest)
-            qs = qs.order_by("-created_at")
+            qs = qs.order_by("-created_at", "-id")
         
         # Apply limit
         return list(qs[:limit])
@@ -99,15 +104,22 @@ class NotebookQuery:
     def my_notebooks(
         self, 
         info: Info, 
-        limit: int = 20
+        limit: int = 20,
+        last_id: Optional[int] = None,
     ) -> Union[NotebookList, NotebookAuthenticationError]:
         """Get current user's notebooks"""
         if not info.context.request.user.is_authenticated:
             return NotebookAuthenticationError(message="You must be logged in to view your notebooks")
         
+        filter_dict = {"user": info.context.request.user}
+        
+        # Add pagination filter
+        if last_id:
+            filter_dict["id__lt"] = last_id
+        
         notebooks = Notebook.objects.select_related('user').filter(
-            user=info.context.request.user
-        ).order_by("-created_at")[:limit]
+            **filter_dict
+        ).order_by("-created_at", "-id")[:limit]
         
         return list(notebooks)
 
@@ -349,6 +361,9 @@ class NotebookMutation:
         page_path: str,
         title: Optional[str] = None,
         content: Optional[str] = None,
+        insert_after_page_id: Optional[int] = None,
+        insert_before_page_id: Optional[int] = None,
+        parent_path: Optional[str] = None,
     ) -> Union[PageType, NotebookAuthenticationError, NotebookPermissionError]:
         """Update an existing page using notebook slug and page path"""
         if not info.context.request.user.is_authenticated:
@@ -377,13 +392,58 @@ class NotebookMutation:
             if current_page is None:
                 raise GraphQLError(f"Page not found at path '{page_path}'")
             
-            # Update fields if provided
+            # Handle parent change if provided
+            if parent_path is not None:
+                new_parent = None
+                if parent_path and parent_path != "/":
+                    # Navigate to the new parent page
+                    parent_parts = [p for p in parent_path.strip("/").split("/") if p]
+                    current_parent = None
+                    
+                    for slug_part in parent_parts:
+                        current_parent = Page.objects.get(
+                            notebook=notebook,
+                            slug=slug_part,
+                            parent=current_parent
+                        )
+                    
+                    new_parent = current_parent
+                
+                # Check if the new parent would create a circular reference
+                if new_parent:
+                    # Check if the new parent is a descendant of the current page
+                    temp_parent = new_parent.parent
+                    while temp_parent:
+                        if temp_parent.id == current_page.id:
+                            raise GraphQLError("Cannot move page: would create circular reference")
+                        temp_parent = temp_parent.parent
+                
+                current_page.parent = new_parent
+            
+            # Update basic fields if provided
             if title is not None:
                 current_page.title = title
             if content is not None:
                 current_page.content = content
             
+            # Save basic changes first
             current_page.save()
+            
+            # Handle reordering - only one positioning method can be used
+            if insert_after_page_id is not None and insert_before_page_id is not None:
+                raise GraphQLError("Cannot specify both insert_after_page_id and insert_before_page_id")
+            
+            if insert_after_page_id is not None:
+                try:
+                    current_page.reorder_after(insert_after_page_id)
+                except ValueError as e:
+                    raise GraphQLError(str(e))
+            elif insert_before_page_id is not None:
+                try:
+                    current_page.reorder_before(insert_before_page_id)
+                except ValueError as e:
+                    raise GraphQLError(str(e))
+            
             return current_page
             
         except (Notebook.DoesNotExist, Page.DoesNotExist):
@@ -439,9 +499,10 @@ class NotebookMutation:
         info: Info,
         notebook_slug: str,
         page_path: str,
-        new_index: int,
+        insert_after_page_id: Optional[int] = None,
+        insert_before_page_id: Optional[int] = None,
     ) -> Union[PageType, NotebookAuthenticationError, NotebookPermissionError]:
-        """Reorder a page by changing its index using notebook slug and page path"""
+        """Reorder a page by positioning it relative to another page"""
         if not info.context.request.user.is_authenticated:
             return NotebookAuthenticationError(message="You must be logged in to reorder pages")
         
@@ -468,9 +529,23 @@ class NotebookMutation:
             if current_page is None:
                 raise GraphQLError(f"Page not found at path '{page_path}'")
             
-            # Update the index
-            current_page.index = new_index
-            current_page.save()
+            # Handle reordering - only one positioning method can be used
+            if insert_after_page_id is not None and insert_before_page_id is not None:
+                raise GraphQLError("Cannot specify both insert_after_page_id and insert_before_page_id")
+            
+            if insert_after_page_id is None and insert_before_page_id is None:
+                raise GraphQLError("Must specify either insert_after_page_id or insert_before_page_id")
+            
+            if insert_after_page_id is not None:
+                try:
+                    current_page.reorder_after(insert_after_page_id)
+                except ValueError as e:
+                    raise GraphQLError(str(e))
+            elif insert_before_page_id is not None:
+                try:
+                    current_page.reorder_before(insert_before_page_id)
+                except ValueError as e:
+                    raise GraphQLError(str(e))
             
             return current_page
             

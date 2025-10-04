@@ -51,7 +51,7 @@ class PageType:
         
         # Build path from current page up to root
         while current_page:
-            path_parts.append(current_page.title)
+            path_parts.append(current_page.slug)
             current_page = current_page.parent
         
         # Reverse to get root-to-leaf order

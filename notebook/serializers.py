@@ -27,3 +27,9 @@ class PageUpdateFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = Page
         fields = ["title", "content"]
+
+
+class NotebookCoverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notebook
+        fields = ["cover"]
